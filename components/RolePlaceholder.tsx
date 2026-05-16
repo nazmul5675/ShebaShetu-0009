@@ -1,12 +1,14 @@
+"use client"
+
 import { GlassCard } from "@/components/GlassCard";
 import { useRole, type Role } from "@/lib/role-store";
 import { Construction, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
+import { useRouter } from "next/navigation";
 
 export default function RolePlaceholder({ role, label }: { role: Role; label: string }) {
   const { setRole } = useRole();
-  const navigate = useNavigate();
+  const router = useRouter();
   return (
     <div className="max-w-2xl mx-auto py-12 text-center">
       <GlassCard variant="strong" className="relative overflow-hidden">
@@ -23,7 +25,7 @@ export default function RolePlaceholder({ role, label }: { role: Role; label: st
             <br />Reception and Doctor screens land in the next milestone.
           </p>
           <div className="flex gap-2 justify-center mt-5">
-            <Button onClick={() => { setRole("patient"); navigate("/patient"); }} className="bg-gradient-emerald text-primary-foreground shadow-glow">
+            <Button onClick={() => { setRole("patient"); router.push("/patient"); }} className="bg-gradient-emerald text-primary-foreground shadow-glow">
               Explore Patient role <ArrowRight className="h-4 w-4 ml-1" />
             </Button>
           </div>
