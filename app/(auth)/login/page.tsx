@@ -21,9 +21,9 @@ import { toast } from "sonner";
 type Role = "PATIENT" | "RECEPTION" | "DOCTOR" | "ADMIN";
 
 const ROLES: { id: Role; label: string; sub: string; icon: any; tint: string }[] = [
-  { id: "PATIENT",   label: "Patient",   sub: "Book, queue & track visits",  icon: UserRound,     tint: "from-emerald-500/20 to-emerald-500/5" },
-  { id: "RECEPTION", label: "Reception", sub: "Manage queues & schedules",   icon: ClipboardList, tint: "from-orange-400/20 to-orange-400/5" },
-  { id: "DOCTOR",    label: "Doctor",    sub: "See patients & reports",      icon: Stethoscope,   tint: "from-sky-400/20 to-sky-400/5" },
+  { id: "PATIENT", label: "Patient", sub: "Book, queue & track visits", icon: UserRound, tint: "from-emerald-500/20 to-emerald-500/5" },
+  { id: "RECEPTION", label: "Reception", sub: "Manage queues & schedules", icon: ClipboardList, tint: "from-orange-400/20 to-orange-400/5" },
+  { id: "DOCTOR", label: "Doctor", sub: "See patients & reports", icon: Stethoscope, tint: "from-sky-400/20 to-sky-400/5" },
 ];
 
 export default function LoginPage() {
@@ -36,7 +36,7 @@ export default function LoginPage() {
   const handleAuth = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
-    
+
     const formData = new FormData(e.currentTarget);
     formData.append("role", selected); // Ensure role is sent
 
@@ -44,13 +44,13 @@ export default function LoginPage() {
       if (mode === "register") {
         const { register } = await import("@/app/actions/auth");
         const result = await register(formData);
-        
+
         if (!result.success) {
           toast.error(result.error || "Registration failed");
           setLoading(false);
           return;
         }
-        
+
         toast.success("Account created! Signing you in...");
       }
 
@@ -62,6 +62,7 @@ export default function LoginPage() {
         email,
         password,
         redirect: false,
+        callbackUrl: "/",
       });
 
       if (result?.error) {
@@ -103,8 +104,8 @@ export default function LoginPage() {
 
           <div className="grid grid-cols-3 gap-3 pt-2">
             {[
-              { icon: Sparkles,    label: "AI Guidance" },
-              { icon: Activity,    label: "Live Queue" },
+              { icon: Sparkles, label: "AI Guidance" },
+              { icon: Activity, label: "Live Queue" },
               { icon: ShieldCheck, label: "Private & secure" },
             ].map(({ icon: I, label }) => (
               <div key={label} className="glass rounded-xl p-3 text-center">
@@ -192,9 +193,9 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              <Button 
-                type="submit" 
-                size="lg" 
+              <Button
+                type="submit"
+                size="lg"
                 className="w-full bg-gradient-emerald text-primary-foreground font-semibold hover:opacity-95 shadow-glow"
                 disabled={loading}
               >
