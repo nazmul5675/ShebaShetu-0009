@@ -8,6 +8,37 @@ import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+async function createScheduleSlotFormAction(formData: FormData) {
+  "use server";
+
+  const session = await auth();
+  if (!session?.user || (session.user as any).role !== "DOCTOR") return;
+
+  const doctor = await prisma.doctorProfile.findUnique({
+    where: { userId: (session.user as any).id },
+    include: {
+      departments: {
+        include: {
+          hospital: true
+        }
+      }
+    }
+  });
+
+  if (!doctor) return;
+
+  const hospitalId = formData.get("hospitalId");
+  if (typeof hospitalId !== "string") return;
+
+  const validHospitalIds = doctor.departments
+    .map((department) => department.hospitalId)
+    .filter((id): id is string => typeof id === "string");
+
+  if (!validHospitalIds.includes(hospitalId)) return;
+
+  await createScheduleSlot(formData);
+}
+
 export default async function DoctorSchedulePage() {
   const session = await auth();
   if (!session?.user) redirect("/login");
@@ -17,11 +48,31 @@ export default async function DoctorSchedulePage() {
     include: {
       schedules: {
         orderBy: { startTime: "asc" }
+      },
+      departments: {
+        include: {
+          hospital: true
+        }
       }
     }
   });
 
   if (!doctor) return <div>Doctor profile not found.</div>;
+
+  type DoctorHospital = {
+    id: string;
+    name: string;
+    address: string;
+    phone: string | null;
+  };
+
+  const assignedHospitals = doctor.departments.reduce<DoctorHospital[]>((unique, department) => {
+    const hospital = department.hospital;
+    if (hospital && !unique.some((item) => item.id === hospital.id)) {
+      unique.push(hospital);
+    }
+    return unique;
+  }, []);
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
@@ -40,30 +91,48 @@ export default async function DoctorSchedulePage() {
             <Plus className="h-4 w-4 text-primary" />
             Quick Add Slot
           </h3>
-          <form action={createScheduleSlot} className="space-y-4">
-            <input type="hidden" name="hospitalId" value="6a04e089776596bf042269fc" /> {/* Placeholder Hospital */}
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-medium text-muted-foreground uppercase">Start Time</label>
-              <input 
-                type="datetime-local" 
-                name="startTime" 
-                className="w-full glass rounded-xl px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-primary/40"
-                required
-              />
+          {assignedHospitals.length > 0 ? (
+            <form action={createScheduleSlotFormAction} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-medium text-muted-foreground uppercase">Hospital</label>
+                <select
+                  name="hospitalId"
+                  className="w-full glass rounded-xl px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-primary/40"
+                  required
+                >
+                  <option value="">Select hospital</option>
+                  {assignedHospitals.map((hospital) => (
+                    <option key={hospital.id} value={hospital.id}>{hospital.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-medium text-muted-foreground uppercase">Start Time</label>
+                <input
+                  type="datetime-local"
+                  name="startTime"
+                  className="w-full glass rounded-xl px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-primary/40"
+                  required
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-medium text-muted-foreground uppercase">End Time</label>
+                <input
+                  type="datetime-local"
+                  name="endTime"
+                  className="w-full glass rounded-xl px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-primary/40"
+                  required
+                />
+              </div>
+              <Button type="submit" className="w-full bg-primary text-primary-foreground shadow-glow">
+                Generate Slot
+              </Button>
+            </form>
+          ) : (
+            <div className="rounded-2xl border border-border/40 bg-destructive/10 p-4 text-sm text-destructive">
+              No assigned hospitals found. Please contact your administrator to assign a hospital before creating slots.
             </div>
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-medium text-muted-foreground uppercase">End Time</label>
-              <input 
-                type="datetime-local" 
-                name="endTime" 
-                className="w-full glass rounded-xl px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-primary/40"
-                required
-              />
-            </div>
-            <Button type="submit" className="w-full bg-primary text-primary-foreground shadow-glow">
-              Generate Slot
-            </Button>
-          </form>
+          )}
         </GlassCard>
 
         <GlassCard className="lg:col-span-2">
@@ -71,7 +140,7 @@ export default async function DoctorSchedulePage() {
             <CalendarDays className="h-4 w-4 text-primary" />
             Your Time Slots
           </h3>
-          
+
           <div className="space-y-3">
             {doctor.schedules.length > 0 ? (
               doctor.schedules.map((slot) => (
@@ -92,7 +161,7 @@ export default async function DoctorSchedulePage() {
                       </div>
                     </div>
                   </div>
-                  
+
                   {!slot.isBooked && (
                     <div className="flex items-center gap-2">
                       <form action={async () => {

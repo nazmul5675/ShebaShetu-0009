@@ -2,16 +2,16 @@
 
 import { useState } from "react";
 import { GlassCard } from "@/components/GlassCard";
-import { 
-  Users2, Search, ArrowRightLeft, 
-  MoreVertical, ChevronUp, ChevronDown, 
-  Trash2, Filter 
+import {
+  Users2, Search, ArrowRightLeft,
+  MoreVertical, ChevronUp, ChevronDown,
+  Trash2, Filter, User
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusPill } from "@/components/StatusPill";
-import { 
-  DropdownMenu, DropdownMenuContent, 
-  DropdownMenuItem, DropdownMenuTrigger 
+import {
+  DropdownMenu, DropdownMenuContent,
+  DropdownMenuItem, DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { updateQueueStatus } from "@/app/actions/reception";
 import { toast } from "sonner";
@@ -27,13 +27,13 @@ export function QueueManager({ queue }: QueueManagerProps) {
 
   const filtered = queue.filter(apt => {
     const s = search.toLowerCase();
-    const matchesSearch = 
+    const matchesSearch =
       apt.patient.user.name?.toLowerCase().includes(s) ||
       apt.patient.user.email?.toLowerCase().includes(s) ||
       apt.queueToken?.tokenNumber.toLowerCase().includes(s) ||
       apt.doctor.user.name?.toLowerCase().includes(s) ||
       apt.doctor.specialization?.toLowerCase().includes(s);
-      
+
     const matchesStatus = statusFilter ? apt.queueToken?.status === statusFilter : true;
     return matchesSearch && matchesStatus;
   });
@@ -49,27 +49,27 @@ export function QueueManager({ queue }: QueueManagerProps) {
       <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
         <div className="relative group flex-1 max-w-2xl">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-          <input 
-            placeholder="Search by name, token, doctor or specialization..." 
+          <input
+            placeholder="Search by name, token, doctor or specialization..."
             className="w-full bg-background/50 border border-border/40 rounded-2xl pl-11 pr-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all shadow-sm"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
         <div className="flex items-center gap-2 overflow-x-auto pb-2 lg:pb-0 scrollbar-none">
-          <Button 
-            variant={statusFilter === null ? "default" : "outline"} 
-            size="sm" 
+          <Button
+            variant={statusFilter === null ? "default" : "outline"}
+            size="sm"
             className="rounded-xl text-xs h-9 px-4 font-semibold transition-all"
             onClick={() => setStatusFilter(null)}
           >
             All Patients
           </Button>
           {["WAITING", "CALLED", "IN_PROGRESS", "COMPLETED"].map((s) => (
-            <Button 
+            <Button
               key={s}
-              variant={statusFilter === s ? "default" : "outline"} 
-              size="sm" 
+              variant={statusFilter === s ? "default" : "outline"}
+              size="sm"
               className="rounded-xl text-xs h-9 px-4 font-semibold whitespace-nowrap transition-all"
               onClick={() => setStatusFilter(s)}
             >
@@ -118,7 +118,7 @@ export function QueueManager({ queue }: QueueManagerProps) {
                   <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest mb-0.5">Queue Position</div>
                   <div className="text-lg font-black text-primary/90">#{apt.queueToken?.position}</div>
                 </div>
-                
+
                 <div className="flex items-center gap-2">
                   <div className="hidden sm:flex items-center gap-1 bg-secondary/30 rounded-xl p-1">
                     <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-background/80" title="Move Up">

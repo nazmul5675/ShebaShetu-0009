@@ -55,8 +55,8 @@ function SymptomsContent() {
             className="min-h-[200px] glass"
           />
         </div>
-        <Button 
-          onClick={analyze} 
+        <Button
+          onClick={analyze}
           className="w-full bg-gradient-emerald text-primary-foreground shadow-glow"
           disabled={loading || !symptoms.trim()}
         >
@@ -122,7 +122,7 @@ function SymptomsContent() {
         <div className="glass p-4 rounded-xl flex items-start gap-3">
           <AlertCircle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
           <div className="text-[11px] text-muted-foreground leading-relaxed">
-            <strong>Disclaimer:</strong> This AI tool is for guidance only and is not a medical diagnosis. 
+            <strong>Disclaimer:</strong> This AI tool is for guidance only and is not a medical diagnosis.
             In case of emergency, please visit the ER immediately.
           </div>
         </div>
@@ -143,8 +143,12 @@ export default function SymptomsPage() {
 
       <Suspense fallback={
         <div className="grid md:grid-cols-2 gap-8 opacity-50 animate-pulse">
-           <GlassCard className="h-[300px] bg-muted" />
-           <GlassCard className="h-[300px] bg-muted" />
+          <GlassCard className="h-[300px] bg-muted">
+            <div />
+          </GlassCard>
+          <GlassCard className="h-[300px] bg-muted">
+            <div />
+          </GlassCard>
         </div>
       }>
         <SymptomsContent />

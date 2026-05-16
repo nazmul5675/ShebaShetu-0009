@@ -2,43 +2,44 @@ export interface SuggestionResult {
   department: string;
   confidence: number;
   warning?: string;
+  reason?: string;
   disclaimer: string;
 }
 
 const RULES = [
-  { 
-    keywords: ['chest pain', 'heart', 'breathing', 'palpitation', 'dizzy', 'pressure', 'high bp', 'cardio'], 
-    department: 'Cardiology', 
+  {
+    keywords: ['chest pain', 'heart', 'breathing', 'palpitation', 'dizzy', 'pressure', 'high bp', 'cardio'],
+    department: 'Cardiology',
     reason: 'Your symptoms suggest potential cardiovascular issues that require specialist evaluation.',
-    warning: 'If you are experiencing severe chest pain, shortness of breath, or numbness, please seek emergency care (ER) immediately.' 
+    warning: 'If you are experiencing severe chest pain, shortness of breath, or numbness, please seek emergency care (ER) immediately.'
   },
-  { 
-    keywords: ['rash', 'skin', 'itching', 'spot', 'allergy', 'acne', 'burn', 'eczema', 'dermatology'], 
+  {
+    keywords: ['rash', 'skin', 'itching', 'spot', 'allergy', 'acne', 'burn', 'eczema', 'dermatology'],
     department: 'Dermatology',
     reason: 'Our dermatologists specialize in skin, hair, and nail conditions related to your description.'
   },
-  { 
-    keywords: ['fever', 'cough', 'cold', 'flu', 'weakness', 'body ache', 'headache', 'infection', 'general'], 
+  {
+    keywords: ['fever', 'cough', 'cold', 'flu', 'weakness', 'body ache', 'headache', 'infection', 'general'],
     department: 'General Medicine',
     reason: 'A general practitioner can provide the first line of diagnosis and treatment for these systemic symptoms.'
   },
-  { 
-    keywords: ['pregnancy', 'period', 'menstrual', 'gyne', 'obstetrics', 'women health', 'pcos'], 
+  {
+    keywords: ['pregnancy', 'period', 'menstrual', 'gyne', 'obstetrics', 'women health', 'pcos'],
     department: 'Gynecology',
     reason: 'These symptoms are best addressed by our specialized women\'s health and obstetrics department.'
   },
-  { 
-    keywords: ['child', 'baby', 'infant', 'pediatric', 'vaccination', 'kid', 'growth'], 
+  {
+    keywords: ['child', 'baby', 'infant', 'pediatric', 'vaccination', 'kid', 'growth'],
     department: 'Pediatrics',
     reason: 'Our pediatricians are experts in child development and pediatric illnesses.'
   },
-  { 
-    keywords: ['eye', 'vision', 'blurred', 'redness', 'ophthalmology', 'glasses', 'sight'], 
+  {
+    keywords: ['eye', 'vision', 'blurred', 'redness', 'ophthalmology', 'glasses', 'sight'],
     department: 'Ophthalmology',
     reason: 'An eye specialist is needed to evaluate your vision and ocular health.'
   },
-  { 
-    keywords: ['tooth', 'gum', 'dental', 'braces', 'extraction', 'cavity', 'oral'], 
+  {
+    keywords: ['tooth', 'gum', 'dental', 'braces', 'extraction', 'cavity', 'oral'],
     department: 'Dental',
     reason: 'For oral and dental concerns, our specialized dental clinic is the appropriate choice.'
   },
@@ -73,7 +74,7 @@ const DISCLAIMER = "This tool uses pattern matching to suggest a department base
 
 export function analyzeSymptoms(symptoms: string): SuggestionResult {
   const text = symptoms.toLowerCase().trim();
-  
+
   if (text.length < 5) {
     return {
       department: 'General Medicine',

@@ -4,9 +4,9 @@ import { GlassCard } from "@/components/GlassCard";
 import { AIDisclaimer } from "@/components/AIDisclaimer";
 import { StatusPill } from "@/components/StatusPill";
 import { Button } from "@/components/ui/button";
-import { 
-  getUpcomingAppointments, 
-  getActiveQueueStatus, 
+import {
+  getUpcomingAppointments,
+  getActiveQueueStatus,
   getPatientStats,
   getPeopleAhead
 } from "@/lib/services/appointment-service";
@@ -33,7 +33,7 @@ export default async function PatientDashboard() {
   if (!session?.user) redirect("/login");
 
   const userId = (session.user as any).id;
-  
+
   // Parallelize data fetching to avoid waterfalls
   const [appointments, activeQueue, stats] = await Promise.all([
     getUpcomingAppointments(userId),
@@ -51,8 +51,8 @@ export default async function PatientDashboard() {
           <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Patient · Dashboard</div>
           <h1 className="text-2xl sm:text-3xl font-bold mt-1">Assalamu Alaikum, {session.user.name?.split(' ')[0]} 👋</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {activeQueue 
-              ? "Your visit is moving quickly. Here's the calm view." 
+            {activeQueue
+              ? "Your visit is moving quickly. Here's the calm view."
               : "No active visits right now. Book one below to get started."}
           </p>
         </div>
@@ -66,7 +66,7 @@ export default async function PatientDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Hero Live Queue or Empty State */}
         {activeQueue ? (
-          <LiveQueueHero 
+          <LiveQueueHero
             appointmentId={activeQueue.id}
             tokenNumber={activeQueue.queueToken?.tokenNumber}
             departmentName={activeQueue.department.name}
@@ -76,11 +76,11 @@ export default async function PatientDashboard() {
           />
         ) : (
           <GlassCard variant="strong" className="lg:col-span-2 flex flex-col items-center justify-center py-12 text-center">
-             <Activity className="h-12 w-12 text-muted-foreground/30 mb-4" />
-             <h3 className="text-lg font-semibold">No active queue token</h3>
-             <p className="text-sm text-muted-foreground max-w-xs mt-1">
-               When you check in at the hospital, your live queue status will appear here.
-             </p>
+            <Activity className="h-12 w-12 text-muted-foreground/30 mb-4" />
+            <h3 className="text-lg font-semibold">No active queue token</h3>
+            <p className="text-sm text-muted-foreground max-w-xs mt-1">
+              When you check in at the hospital, your live queue status will appear here.
+            </p>
           </GlassCard>
         )}
 

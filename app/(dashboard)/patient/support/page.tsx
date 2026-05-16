@@ -6,7 +6,8 @@ import { LifeBuoy, Send, MessageSquare, History, Phone, Mail, MapPin } from "luc
 import { Button } from "@/components/ui/button";
 import { createSupportTicket } from "@/app/actions/settings";
 import { format } from "date-fns";
-
+import { cn } from "@/lib/utils";
+import { Clock } from "lucide-react";
 export default async function PatientSupportPage() {
   const session = await auth();
   if (!session?.user) redirect("/login");
@@ -31,67 +32,67 @@ export default async function PatientSupportPage() {
       <div className="grid lg:grid-cols-3 gap-8">
         <div className="lg:col-span-1 space-y-6">
           <GlassCard className="bg-primary/5 border-primary/10">
-             <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
-               <LifeBuoy className="h-5 w-5 text-primary" />
-               Emergency Contact
-             </h3>
-             <div className="space-y-4">
-               <div className="flex items-center gap-3">
-                 <div className="h-10 w-10 rounded-xl bg-background grid place-items-center">
-                   <Phone className="h-5 w-5 text-primary" />
-                 </div>
-                 <div>
-                   <div className="text-xs text-muted-foreground uppercase font-bold tracking-tighter">Hotline</div>
-                   <div className="text-sm font-black">+880 1234 567890</div>
-                 </div>
-               </div>
-               <div className="flex items-center gap-3">
-                 <div className="h-10 w-10 rounded-xl bg-background grid place-items-center">
-                   <Mail className="h-5 w-5 text-primary" />
-                 </div>
-                 <div>
-                   <div className="text-xs text-muted-foreground uppercase font-bold tracking-tighter">Email</div>
-                   <div className="text-sm font-black">support@shebashetu.com</div>
-                 </div>
-               </div>
-             </div>
+            <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+              <LifeBuoy className="h-5 w-5 text-primary" />
+              Emergency Contact
+            </h3>
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-background grid place-items-center">
+                  <Phone className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground uppercase font-bold tracking-tighter">Hotline</div>
+                  <div className="text-sm font-black">+880 1234 567890</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-background grid place-items-center">
+                  <Mail className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground uppercase font-bold tracking-tighter">Email</div>
+                  <div className="text-sm font-black">support@shebashetu.com</div>
+                </div>
+              </div>
+            </div>
           </GlassCard>
 
           <GlassCard>
-             <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
-               <MessageSquare className="h-5 w-5 text-primary" />
-               New Support Ticket
-             </h3>
-             <form action={async (formData: FormData) => {
-               "use server"
-               const subject = formData.get("subject") as string;
-               const message = formData.get("message") as string;
-               await createSupportTicket(subject, message);
-             }} className="space-y-4">
-               <div className="space-y-1.5">
-                 <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Subject</label>
-                 <input 
-                   name="subject" 
-                   placeholder="e.g., Booking issue"
-                   className="w-full glass rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                   required
-                 />
-               </div>
-               <div className="space-y-1.5">
-                 <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Detailed Message</label>
-                 <textarea 
-                   name="message" 
-                   rows={4}
-                   placeholder="How can we help you today?"
-                   className="w-full glass rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none"
-                   required
-                 />
-               </div>
-               <Button type="submit" className="w-full bg-primary text-primary-foreground shadow-glow h-12 font-bold rounded-xl active:scale-[0.98] transition-transform">
-                 <Send className="h-4 w-4 mr-2" />
-                 Submit Ticket
-               </Button>
-             </form>
+            <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+              <MessageSquare className="h-5 w-5 text-primary" />
+              New Support Ticket
+            </h3>
+            <form action={async (formData: FormData) => {
+              "use server"
+              const subject = formData.get("subject") as string;
+              const message = formData.get("message") as string;
+              await createSupportTicket(subject, message);
+            }} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Subject</label>
+                <input
+                  name="subject"
+                  placeholder="e.g., Booking issue"
+                  className="w-full glass rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                  required
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Detailed Message</label>
+                <textarea
+                  name="message"
+                  rows={4}
+                  placeholder="How can we help you today?"
+                  className="w-full glass rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none"
+                  required
+                />
+              </div>
+              <Button type="submit" className="w-full bg-primary text-primary-foreground shadow-glow h-12 font-bold rounded-xl active:scale-[0.98] transition-transform">
+                <Send className="h-4 w-4 mr-2" />
+                Submit Ticket
+              </Button>
+            </form>
           </GlassCard>
         </div>
 
@@ -101,7 +102,7 @@ export default async function PatientSupportPage() {
               <History className="h-5 w-5 text-primary" />
               Your Recent Tickets
             </h3>
-            
+
             <div className="space-y-4">
               {tickets.length > 0 ? (
                 tickets.map((t) => (
