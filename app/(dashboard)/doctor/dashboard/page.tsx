@@ -1,12 +1,12 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { GlassCard } from "@/components/GlassCard";
-import { 
-  ClipboardList, Calendar, Users, 
+import {
+  ClipboardList, Calendar, Users,
   ArrowUpRight, Clock, CheckCircle2, User
 } from "lucide-react";
 import Link from "next/link";
-import { getDoctorStats, getDoctorAppointments, getActiveAppointment, getDoctorAvailability } from "@/lib/services/doctor-service";
+import { getDoctorStats, getDoctorAppointments, getActiveAppointment, getDoctorAvailability, getPatientHistory } from "@/lib/services/doctor-service";
 import { format } from "date-fns";
 import { StatusPill } from "@/components/StatusPill";
 import { ActiveSession } from "@/components/doctor/ActiveSession";
@@ -26,9 +26,9 @@ export default async function DoctorDashboard() {
     getDoctorAvailability(userId)
   ]);
 
-  let patientHistory = [];
+  type PatientHistory = Awaited<ReturnType<typeof getPatientHistory>>;
+  let patientHistory: PatientHistory = [];
   if (activeAppointment) {
-    const { getPatientHistory } = await import("@/lib/services/doctor-service");
     patientHistory = await getPatientHistory(activeAppointment.patientId);
   }
 
@@ -56,7 +56,7 @@ export default async function DoctorDashboard() {
             <div className="text-xs text-muted-foreground">Patients Today</div>
           </div>
         </GlassCard>
-        
+
         <GlassCard className="flex items-center gap-4">
           <div className="h-12 w-12 rounded-2xl bg-emerald-500/15 grid place-items-center">
             <CheckCircle2 className="h-6 w-6 text-emerald-500" />
@@ -89,7 +89,7 @@ export default async function DoctorDashboard() {
               View full list <ArrowUpRight className="h-3 w-3" />
             </Link>
           </div>
-          
+
           <div className="space-y-3">
             {appointments.length > 0 ? (
               appointments.map((apt) => (
@@ -106,7 +106,7 @@ export default async function DoctorDashboard() {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center gap-3">
                     <StatusPill status={apt.status.toLowerCase() as any} />
                     {!activeAppointment && (
