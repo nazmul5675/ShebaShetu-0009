@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { GlassCard } from "@/components/GlassCard";
-import { 
-  FolderHeart, Search, FileText, 
-  Download, ExternalLink, Calendar, 
+import {
+  FolderHeart, Search, FileText,
+  Download, ExternalLink, Calendar,
   User, Hash, XCircle, Loader2
 } from "lucide-react";
 import { format } from "date-fns";
@@ -19,8 +19,8 @@ export function ReportVault({ initialReports }: ReportVaultProps) {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const filtered = initialReports.filter((r) => 
-    r.title.toLowerCase().includes(search.toLowerCase()) || 
+  const filtered = initialReports.filter((r) =>
+    r.title.toLowerCase().includes(search.toLowerCase()) ||
     (r.doctorName?.toLowerCase() || "").includes(search.toLowerCase())
   );
 
@@ -29,7 +29,7 @@ export function ReportVault({ initialReports }: ReportVaultProps) {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-primary/5 p-4 rounded-3xl border border-primary/10">
         <div className="relative group flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-          <input 
+          <input
             placeholder="Search by report name or doctor..."
             className="w-full glass rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all"
             value={search}
@@ -59,10 +59,9 @@ export function ReportVault({ initialReports }: ReportVaultProps) {
                     {report.type}
                   </div>
                 </div>
-                
-                  <div>
-                    <h4 className="font-bold text-lg group-hover:text-primary transition-colors line-clamp-1">{report.title}</h4>
-                  </div>
+
+                <div>
+                  <h4 className="font-bold text-lg group-hover:text-primary transition-colors line-clamp-1">{report.title}</h4>
                 </div>
 
                 <div className="flex items-center justify-between pt-2">
