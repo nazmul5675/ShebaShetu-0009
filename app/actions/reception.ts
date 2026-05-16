@@ -1,3 +1,5 @@
+"use server";
+
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
@@ -21,7 +23,7 @@ export async function checkInPatient(appointmentId: string) {
     // Get the next token number for this doctor today
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     const count = await prisma.queueToken.count({
       where: {
         appointment: {
