@@ -129,18 +129,19 @@ export function AdminUserDetailForm({ user, hospitals, departments }: AdminUserD
 
     startTransition(async () => {
       const result = await createHospitalForDoctorByAdmin(user.id, typedName);
-      if (!result.success) {
+      if (!result.success || !result.hospital) {
         toast.error(result.error || "Failed to create hospital.");
         return;
       }
 
-      setAvailableHospitals((current) => [...current, result.hospital]);
+      const newHospital = result.hospital as Hospital;
+      setAvailableHospitals((current) => [...current, newHospital]);
       setDoctor((current) => ({
         ...current,
-        hospitalIds: [...current.hospitalIds, result.hospital.id],
+        hospitalIds: [...current.hospitalIds, newHospital.id],
       }));
       setManualHospitalName("");
-      toast.success(`${result.hospital.name} created and assigned.`);
+      toast.success(`${newHospital.name} created and assigned.`);
     });
   };
 

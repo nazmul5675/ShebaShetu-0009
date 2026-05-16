@@ -98,12 +98,12 @@ export function AdminSupportPanel({ tickets, activeTicketId }: AdminSupportPanel
                     id: result.reply.id,
                     message: result.reply.message,
                     createdAt: new Date(result.reply.createdAt).toISOString(),
-                    author: {
+                    author: result.reply.author ? {
                       id: result.reply.author.id,
                       name: result.reply.author.name,
                       email: result.reply.author.email,
                       role: result.reply.author.role,
-                    },
+                    } : null,
                   },
                 ],
               }

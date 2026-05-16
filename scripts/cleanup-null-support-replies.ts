@@ -9,12 +9,12 @@ async function main() {
         listCollections: 1,
     });
 
-    const collections = collectionsResult.cursor.firstBatch.map((c) => c.name);
+    const collections = collectionsResult.cursor.firstBatch.map((c: any) => c.name);
 
     console.log("Collections found:");
     console.log(collections);
 
-    const possibleCollections = collections.filter((name) =>
+    const possibleCollections = collections.filter((name: string) =>
         name.toLowerCase().includes("support") ||
         name.toLowerCase().includes("reply")
     );

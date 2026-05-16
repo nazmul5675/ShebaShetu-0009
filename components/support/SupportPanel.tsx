@@ -89,10 +89,10 @@ export function SupportPanel({ tickets, activeTicketId, variant = "compact" }: S
                     id: result.reply.id,
                     message: result.reply.message,
                     createdAt: new Date(result.reply.createdAt).toISOString(),
-                    author: {
+                    author: result.reply.author ? {
                       name: result.reply.author.name,
                       role: result.reply.author.role,
-                    },
+                    } : { name: "Unknown", role: "USER" },
                   },
                 ],
               }
