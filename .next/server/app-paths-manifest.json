@@ -1,0 +1,9 @@
+{
+  "/api/notifications/route": "app/api/notifications/route.js",
+  "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
+  "/(auth)/login/page": "app/(auth)/login/page.js",
+  "/(dashboard)/admin/dashboard/page": "app/(dashboard)/admin/dashboard/page.js",
+  "/(dashboard)/reception/dashboard/page": "app/(dashboard)/reception/dashboard/page.js",
+  "/(dashboard)/reception/queue/page": "app/(dashboard)/reception/queue/page.js",
+  "/(dashboard)/reception/schedule/page": "app/(dashboard)/reception/schedule/page.js"
+}

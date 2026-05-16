@@ -1,6 +1,25 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 
+type SessionUser = {
+  role?: string;
+};
+
+function getDashboardPath(role?: string) {
+  switch (role) {
+    case "DOCTOR":
+      return "/doctor/dashboard";
+    case "RECEPTION":
+      return "/reception/dashboard";
+    case "ADMIN":
+    case "SUPER_ADMIN":
+      return "/admin/dashboard";
+    case "PATIENT":
+    default:
+      return "/patient/dashboard";
+  }
+}
+
 export default async function HomePage() {
   const session = await auth();
 
@@ -8,16 +27,6 @@ export default async function HomePage() {
     redirect("/login");
   }
 
-  const role = (session.user as any).role || "PATIENT";
-
-  switch (role) {
-    case "DOCTOR":
-      redirect("/doctor/dashboard");
-    case "RECEPTION":
-    case "ADMIN":
-      redirect("/reception/dashboard");
-    case "PATIENT":
-    default:
-      redirect("/patient/dashboard");
-  }
+  const role = (session.user as SessionUser).role || "PATIENT";
+  redirect(getDashboardPath(role));
 }

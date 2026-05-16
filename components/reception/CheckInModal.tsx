@@ -14,9 +14,10 @@ interface CheckInModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   pendingAppointments: any[];
+  canManage: boolean;
 }
 
-export function CheckInModal({ open, onOpenChange, pendingAppointments }: CheckInModalProps) {
+export function CheckInModal({ open, onOpenChange, pendingAppointments, canManage }: CheckInModalProps) {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState<string | null>(null);
 
@@ -26,7 +27,8 @@ export function CheckInModal({ open, onOpenChange, pendingAppointments }: CheckI
       apt.patient.user.name?.toLowerCase().includes(s) ||
       apt.patient.user.email?.toLowerCase().includes(s) ||
       apt.patient.id.toLowerCase().includes(s) ||
-      apt.doctor.user.name?.toLowerCase().includes(s)
+      apt.doctor.user.name?.toLowerCase().includes(s) ||
+      apt.doctor.specialization?.toLowerCase().includes(s)
     );
   });
 
@@ -53,7 +55,9 @@ export function CheckInModal({ open, onOpenChange, pendingAppointments }: CheckI
         <DialogHeader className="p-6 pb-0">
           <DialogTitle className="text-2xl font-bold tracking-tight">New Patient Check-in</DialogTitle>
           <DialogDescription className="text-muted-foreground/80">
-            Search for an existing appointment to issue a queue token.
+            {canManage
+              ? "Search for an existing appointment to issue a queue token."
+              : "No hospital assigned. Please contact admin before issuing queue tokens."}
           </DialogDescription>
         </DialogHeader>
 
@@ -66,6 +70,7 @@ export function CheckInModal({ open, onOpenChange, pendingAppointments }: CheckI
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               autoFocus
+              disabled={!canManage}
             />
           </div>
 
@@ -99,7 +104,7 @@ export function CheckInModal({ open, onOpenChange, pendingAppointments }: CheckI
                     </div>
                   </div>
                   <Button 
-                    disabled={!!loading}
+                    disabled={!canManage || !!loading}
                     onClick={() => handleCheckIn(apt.id)}
                     className="rounded-xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 h-10 px-5 font-bold transition-all active:scale-95"
                   >

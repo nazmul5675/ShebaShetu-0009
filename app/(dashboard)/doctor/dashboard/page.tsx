@@ -72,7 +72,7 @@ export default async function DoctorDashboard() {
             <Clock className="h-6 w-6 text-orange-500" />
           </div>
           <div>
-            <div className="text-2xl font-bold">{stats?.avgWaitTime || "N/A"}</div>
+            <div className="text-2xl font-bold">{stats?.avgWaitTime ?? "00:00"}</div>
             <div className="text-xs text-muted-foreground">Avg. Wait Time</div>
           </div>
         </GlassCard>

@@ -4,20 +4,47 @@ import { unstable_cache } from "next/cache";
 
 export const getCachedDepartments = unstable_cache(
   async () => {
+    const now = new Date();
+
     return await prisma.department.findMany({
+      orderBy: { name: "asc" },
       include: {
+        hospital: true,
         doctors: {
+          where: {
+            user: { isActive: true },
+            schedules: {
+              some: {
+                isAvailable: true,
+                isBooked: false,
+                startTime: { gte: now },
+              },
+            },
+          },
           include: {
             user: {
               select: { id: true, name: true, image: true }
-            }
+            },
+            hospitals: true,
+            schedules: {
+              where: {
+                isAvailable: true,
+                isBooked: false,
+                startTime: { gte: now },
+              },
+              include: {
+                hospital: true,
+              },
+              orderBy: { startTime: "asc" },
+              take: 20,
+            },
           }
         }
       }
     });
   },
   ["departments-list"],
-  { tags: ["departments"], revalidate: 3600 }
+  { tags: ["departments"], revalidate: 60 }
 );
 
 // Cache patient ID to avoid redundant lookups

@@ -31,5 +31,6 @@ export function useNotifications() {
     unreadCount: data?.unreadCount || 0,
     isLoading,
     markRead: markReadMutation.mutate,
+    markReadAsync: markReadMutation.mutateAsync,
   };
 }

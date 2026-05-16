@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
+import { createSupportTicket as createSupportTicketAction } from "@/app/actions/support";
 
 const profileSchema = z.object({
   name: z.string().min(2),
@@ -13,11 +14,16 @@ const profileSchema = z.object({
   consultationFee: z.number().optional(),
 });
 
+type SessionUser = {
+  id?: string;
+};
+
 export async function updateProfile(data: z.infer<typeof profileSchema>) {
   const session = await auth();
   if (!session?.user) return { success: false, error: "Unauthorized" };
 
-  const userId = (session.user as any).id;
+  const userId = (session.user as SessionUser).id;
+  if (!userId) return { success: false, error: "Unauthorized" };
 
   try {
     // Update base user
@@ -48,6 +54,8 @@ export async function updateProfile(data: z.infer<typeof profileSchema>) {
     
     revalidatePath("/doctor/settings");
     revalidatePath("/reception/settings");
+    revalidatePath("/patient/settings");
+    revalidatePath("/admin/settings");
     return { success: true };
   } catch (error) {
     console.error("Update profile error:", error);
@@ -58,19 +66,23 @@ export async function updateProfile(data: z.infer<typeof profileSchema>) {
 export async function updatePreferences(data: { emailAlerts?: boolean; queueUpdates?: boolean }) {
   const session = await auth();
   if (!session?.user) return { success: false, error: "Unauthorized" };
+  const userId = (session.user as SessionUser).id;
+  if (!userId) return { success: false, error: "Unauthorized" };
 
   try {
     await prisma.userPreference.upsert({
-      where: { userId: (session.user as any).id },
+      where: { userId },
       update: data,
       create: {
-        userId: (session.user as any).id,
+        userId,
         ...data,
       }
     });
     
     revalidatePath("/doctor/settings");
     revalidatePath("/reception/settings");
+    revalidatePath("/patient/settings");
+    revalidatePath("/admin/settings");
     return { success: true };
   } catch (error) {
     return { success: false, error: "Failed to update preferences" };
@@ -80,9 +92,11 @@ export async function updatePreferences(data: { emailAlerts?: boolean; queueUpda
 export async function updatePassword(current: string, next: string) {
   const session = await auth();
   if (!session?.user) return { success: false, error: "Unauthorized" };
+  const userId = (session.user as SessionUser).id;
+  if (!userId) return { success: false, error: "Unauthorized" };
 
   const user = await prisma.user.findUnique({
-    where: { id: (session.user as any).id }
+    where: { id: userId }
   });
 
   if (!user || !user.passwordHash) return { success: false, error: "User not found" };
@@ -100,19 +114,5 @@ export async function updatePassword(current: string, next: string) {
 }
 
 export async function createSupportTicket(subject: string, message: string) {
-  const session = await auth();
-  if (!session?.user) return { success: false, error: "Unauthorized" };
-
-  try {
-    await prisma.supportTicket.create({
-      data: {
-        userId: (session.user as any).id,
-        subject,
-        message,
-      }
-    });
-    return { success: true };
-  } catch (error) {
-    return { success: false, error: "Failed to submit ticket" };
-  }
+  return createSupportTicketAction(subject, message);
 }

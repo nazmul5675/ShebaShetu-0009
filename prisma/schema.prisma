@@ -59,6 +59,7 @@ model User {
   receptionProfile ReceptionProfile?
   userPreference   UserPreference?
   supportTickets   SupportTicket[]
+  supportReplies   SupportTicketReply[]
   activityLogs     ActivityLog[]
 }
 
@@ -83,7 +84,10 @@ model DoctorProfile {
   specialization String
   licenseNo      String?
   consultationFee Float?
+  roomNumber     String?
   
+  hospitalIds    String[] @default([]) @db.ObjectId
+  hospitals      Hospital[] @relation("DoctorHospitals", fields: [hospitalIds], references: [id])
   departmentIds  String[] @db.ObjectId
   departments    Department[] @relation(fields: [departmentIds], references: [id])
 
@@ -106,6 +110,8 @@ model Hospital {
   phone     String?
 
   departments    Department[]
+  doctorIds      String[] @default([]) @db.ObjectId
+  doctors        DoctorProfile[] @relation("DoctorHospitals", fields: [doctorIds], references: [id])
   receptionists  ReceptionProfile[]
   appointments   Appointment[]
   schedules      ScheduleSlot[]
@@ -259,7 +265,22 @@ model SupportTicket {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  replies     SupportTicketReply[]
+
   @@index([userId, status])
+}
+
+model SupportTicketReply {
+  id        String        @id @default(auto()) @map("_id") @db.ObjectId
+  ticketId  String        @db.ObjectId
+  ticket    SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  authorId  String?       @db.ObjectId
+  author    User?         @relation(fields: [authorId], references: [id])
+  message   String
+  createdAt DateTime      @default(now())
+
+  @@index([ticketId, createdAt])
+  @@index([authorId])
 }
 
 model TwoFactorToken {

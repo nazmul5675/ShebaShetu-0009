@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import {
   UserRound, ClipboardList, Stethoscope, ArrowRight, Mail, Lock,
-  Sparkles, ShieldCheck, Activity,
+  Sparkles, ShieldCheck, Activity, Eye, EyeOff, type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { signIn } from "next-auth/react";
@@ -20,10 +20,11 @@ import { toast } from "sonner";
 
 type Role = "PATIENT" | "RECEPTION" | "DOCTOR" | "ADMIN";
 
-const ROLES: { id: Role; label: string; sub: string; icon: any; tint: string }[] = [
+const ROLES: { id: Role; label: string; sub: string; icon: LucideIcon; tint: string }[] = [
   { id: "PATIENT", label: "Patient", sub: "Book, queue & track visits", icon: UserRound, tint: "from-emerald-500/20 to-emerald-500/5" },
   { id: "RECEPTION", label: "Reception", sub: "Manage queues & schedules", icon: ClipboardList, tint: "from-orange-400/20 to-orange-400/5" },
   { id: "DOCTOR", label: "Doctor", sub: "See patients & reports", icon: Stethoscope, tint: "from-sky-400/20 to-sky-400/5" },
+  { id: "ADMIN", label: "Admin", sub: "Users, tickets & settings", icon: ShieldCheck, tint: "from-violet-400/20 to-violet-400/5" },
 ];
 
 export default function LoginPage() {
@@ -31,6 +32,8 @@ export default function LoginPage() {
   const [mode, setMode] = useState<"login" | "register">("login");
   const [forgot, setForgot] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const router = useRouter();
 
   const handleAuth = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -42,6 +45,21 @@ export default function LoginPage() {
 
     try {
       if (mode === "register") {
+        if (selected === "ADMIN") {
+          toast.error("Admin accounts must be created by an existing administrator.");
+          setLoading(false);
+          return;
+        }
+
+        const password = formData.get("password") as string;
+        const confirmPassword = formData.get("confirmPassword") as string;
+
+        if (password !== confirmPassword) {
+          toast.error("Passwords do not match.");
+          setLoading(false);
+          return;
+        }
+
         const { register } = await import("@/app/actions/auth");
         const result = await register(formData);
 
@@ -138,8 +156,8 @@ export default function LoginPage() {
           </div>
 
           {/* Role cards */}
-          <div className="grid grid-cols-3 gap-2.5">
-            {ROLES.map((r) => {
+          <div className={cn("grid gap-2.5", mode === "login" ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-3")}>
+            {(mode === "login" ? ROLES : ROLES.filter((r) => r.id !== "ADMIN")).map((r) => {
               const I = r.icon;
               const active = selected === r.id;
               return (
@@ -189,9 +207,49 @@ export default function LoginPage() {
                 </div>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input id="password" name="password" type="password" className="pl-9" placeholder="••••••••" required />
+                  <Input
+                    id="password"
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    className="pr-11 pl-9"
+                    placeholder="••••••••"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((current) => !current)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
                 </div>
               </div>
+
+              {mode === "register" && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="confirmPassword">Confirm password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="confirmPassword"
+                      name="confirmPassword"
+                      type={showConfirmPassword ? "text" : "password"}
+                      className="pr-11 pl-9"
+                      placeholder="Repeat your password"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword((current) => !current)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                      aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+                    >
+                      {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+              )}
 
               <Button
                 type="submit"
@@ -203,21 +261,16 @@ export default function LoginPage() {
                 {!loading && <ArrowRight className="ml-1 h-4 w-4" />}
               </Button>
 
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border" /></div>
-                <div className="relative flex justify-center text-[10px] uppercase tracking-wider">
-                  <span className="bg-card/80 px-2 text-muted-foreground">or</span>
-                </div>
-              </div>
-
-              <button type="button" className="w-full glass glass-hover rounded-lg py-2.5 text-sm font-medium">
-                Continue with Google
-              </button>
-
               <div className="text-center text-xs text-muted-foreground">
                 {mode === "login" ? "New to ShebaSetu?" : "Already have an account?"}{" "}
                 <button type="button" className="text-primary font-medium hover:underline"
-                  onClick={() => setMode(mode === "login" ? "register" : "login")}>
+                  onClick={() => {
+                    const nextMode = mode === "login" ? "register" : "login";
+                    if (nextMode === "register" && selected === "ADMIN") {
+                      setSelected("PATIENT");
+                    }
+                    setMode(nextMode);
+                  }}>
                   {mode === "login" ? "Create an account" : "Sign in"}
                 </button>
               </div>

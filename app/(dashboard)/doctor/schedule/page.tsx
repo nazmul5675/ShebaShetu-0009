@@ -1,9 +1,9 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { GlassCard } from "@/components/GlassCard";
-import { CalendarDays, Clock, Plus, Trash2, CheckCircle, XCircle } from "lucide-react";
+import { CalendarDays, Clock, Plus, Trash2 } from "lucide-react";
 import { prisma } from "@/lib/db";
-import { createScheduleSlot, toggleSlotAvailability } from "@/app/actions/doctor";
+import { createScheduleSlot } from "@/app/actions/doctor";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -12,16 +12,18 @@ async function createScheduleSlotFormAction(formData: FormData) {
   "use server";
 
   const session = await auth();
-  if (!session?.user || (session.user as any).role !== "DOCTOR") return;
+  const sessionUser = session?.user as { id?: string; role?: string } | undefined;
+  if (!sessionUser?.id || sessionUser.role !== "DOCTOR") return;
 
   const doctor = await prisma.doctorProfile.findUnique({
-    where: { userId: (session.user as any).id },
+    where: { userId: sessionUser.id },
     include: {
       departments: {
         include: {
           hospital: true
         }
-      }
+      },
+      hospitals: true,
     }
   });
 
@@ -30,11 +32,13 @@ async function createScheduleSlotFormAction(formData: FormData) {
   const hospitalId = formData.get("hospitalId");
   if (typeof hospitalId !== "string") return;
 
-  const validHospitalIds = doctor.departments
+  const departmentHospitalIds = doctor.departments
     .map((department) => department.hospitalId)
     .filter((id): id is string => typeof id === "string");
+  const manualHospitalIds = doctor.hospitals.map((hospital) => hospital.id);
+  const assignedHospitalIds = Array.from(new Set([...departmentHospitalIds, ...manualHospitalIds]));
 
-  if (!validHospitalIds.includes(hospitalId)) return;
+  if (!assignedHospitalIds.includes(hospitalId)) return;
 
   await createScheduleSlot(formData);
 }
@@ -44,16 +48,18 @@ export default async function DoctorSchedulePage() {
   if (!session?.user) redirect("/login");
 
   const doctor = await prisma.doctorProfile.findUnique({
-    where: { userId: (session.user as any).id },
+    where: { userId: (session.user as { id?: string }).id || "" },
     include: {
       schedules: {
-        orderBy: { startTime: "asc" }
+        orderBy: { startTime: "asc" },
+        include: { hospital: true }
       },
       departments: {
         include: {
           hospital: true
         }
-      }
+      },
+      hospitals: true,
     }
   });
 
@@ -73,6 +79,12 @@ export default async function DoctorSchedulePage() {
     }
     return unique;
   }, []);
+
+  doctor.hospitals.forEach((hospital) => {
+    if (!assignedHospitals.some((item) => item.id === hospital.id)) {
+      assignedHospitals.push(hospital);
+    }
+  });
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
@@ -130,7 +142,7 @@ export default async function DoctorSchedulePage() {
             </form>
           ) : (
             <div className="rounded-2xl border border-border/40 bg-destructive/10 p-4 text-sm text-destructive">
-              No assigned hospitals found. Please contact your administrator to assign a hospital before creating slots.
+              No hospital assigned. Please contact admin.
             </div>
           )}
         </GlassCard>
@@ -157,7 +169,7 @@ export default async function DoctorSchedulePage() {
                         {format(new Date(slot.startTime), "MMM d, h:mm a")} - {format(new Date(slot.endTime), "h:mm a")}
                       </div>
                       <div className="text-[10px] text-muted-foreground uppercase tracking-wider">
-                        {slot.isBooked ? "Booked by Patient" : "Available for Booking"}
+                        {slot.hospital.name} {doctor.roomNumber ? `- Room ${doctor.roomNumber}` : ""} - {slot.isBooked ? "Booked by Patient" : "Available for Booking"}
                       </div>
                     </div>
                   </div>

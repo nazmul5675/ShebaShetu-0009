@@ -2,14 +2,14 @@
 
 import { useState } from "react";
 import { GlassCard } from "@/components/GlassCard";
-import { Shield, Bell, Loader2, Camera, Check } from "lucide-react";
+import { Shield, Bell, Loader2, Camera, Check, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { updateProfile, updatePreferences, updatePassword } from "@/app/actions/settings";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 import { 
-  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger 
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,12 +18,21 @@ import { Badge } from "@/components/ui/badge";
 interface SettingsFormProps {
   user: {
     id: string;
-    name: string;
-    email: string;
-    image?: string;
+    name: string | null;
+    email: string | null;
+    image?: string | null;
+    role?: string;
+    patientProfile?: unknown;
     doctorProfile?: {
       specialization: string;
       consultationFee: number | null;
+    } | null;
+    receptionProfile?: {
+      hospital?: {
+        name: string;
+        address: string;
+        phone?: string | null;
+      } | null;
     } | null;
   };
   preferences: {
@@ -36,6 +45,18 @@ export function SettingsForm({ user, preferences }: SettingsFormProps) {
   const [loading, setLoading] = useState(false);
   const [prefs, setPrefs] = useState(preferences);
   const [passwordModal, setPasswordModal] = useState(false);
+  const profileLabel =
+    user.role === "ADMIN"
+      ? "Admin"
+      : user.role === "SUPER_ADMIN"
+        ? "Super Admin"
+        : user.doctorProfile
+          ? "Doctor"
+          : user.receptionProfile
+            ? "Receptionist"
+            : user.patientProfile
+              ? "Patient"
+              : "User";
 
   const handlePreferenceToggle = async (key: "emailAlerts" | "queueUpdates") => {
     const nextValue = !prefs[key];
@@ -56,7 +77,7 @@ export function SettingsForm({ user, preferences }: SettingsFormProps) {
     const formData = new FormData(e.currentTarget);
     
     const file = (e.currentTarget.elements.namedItem("avatar") as HTMLInputElement).files?.[0];
-    let image = user.image;
+    let image = user.image ?? undefined;
 
     if (file) {
       image = await new Promise((resolve) => {
@@ -69,8 +90,12 @@ export function SettingsForm({ user, preferences }: SettingsFormProps) {
     const res = await updateProfile({
       name: formData.get("name") as string,
       image: image,
-      specialization: formData.get("specialization") as string,
-      consultationFee: Number(formData.get("consultationFee")),
+      ...(user.doctorProfile
+        ? {
+            specialization: formData.get("specialization") as string,
+            consultationFee: Number(formData.get("consultationFee")),
+          }
+        : {}),
     });
     setLoading(false);
     if (res.success) toast.success("Profile updated");
@@ -96,24 +121,51 @@ export function SettingsForm({ user, preferences }: SettingsFormProps) {
               </label>
             </div>
             <div className="flex-1 pb-2">
-              <div className="text-2xl font-black tracking-tight">{user.name}</div>
-              <div className="text-sm text-muted-foreground font-medium">{user.email}</div>
+              <div className="text-2xl font-black tracking-tight">{user.name || "Unnamed user"}</div>
+              <div className="text-sm text-muted-foreground font-medium">{user.email || "No email available"}</div>
               <div className="flex items-center gap-2 mt-2">
                 <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 text-[10px] font-black uppercase tracking-widest px-2 py-0.5">
-                  {user.doctorProfile ? "Doctor" : "Receptionist"} Profile
+                  {profileLabel} Profile
                 </Badge>
               </div>
             </div>
           </div>
+          
+          {user.role === "RECEPTION" && (
+            user.receptionProfile?.hospital ? (
+              <div className="rounded-2xl bg-primary/5 border border-primary/10 p-4">
+                <div className="text-[10px] font-black text-primary uppercase tracking-widest mb-1">
+                  Assigned Hospital
+                </div>
+                <div className="text-sm font-bold">{user.receptionProfile.hospital.name}</div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  {user.receptionProfile.hospital.address}
+                  {user.receptionProfile.hospital.phone ? ` - ${user.receptionProfile.hospital.phone}` : ""}
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-2xl bg-destructive/5 border border-destructive/20 p-4 flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 text-destructive mt-0.5" />
+                <div>
+                  <div className="text-[10px] font-black text-destructive uppercase tracking-widest mb-1">
+                    No Hospital Assigned
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    You currently have no hospital assigned. Please contact your system administrator to assign a hospital so you can manage patient queues.
+                  </p>
+                </div>
+              </div>
+            )
+          )}
 
           <div className="grid sm:grid-cols-2 gap-6">
              <div className="space-y-2">
                 <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Full Name</Label>
-                <Input name="name" className="h-12 rounded-xl bg-background/50 border-border/40 focus:ring-primary/20 focus:border-primary/40 transition-all" defaultValue={user.name} required />
+                <Input name="name" className="h-12 rounded-xl bg-background/50 border-border/40 focus:ring-primary/20 focus:border-primary/40 transition-all" defaultValue={user.name || ""} required />
              </div>
              <div className="space-y-2">
                 <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Email Address</Label>
-                <Input className="h-12 rounded-xl bg-secondary/30 border-border/20 opacity-60 cursor-not-allowed" defaultValue={user.email} disabled />
+                <Input className="h-12 rounded-xl bg-secondary/30 border-border/20 opacity-60 cursor-not-allowed" defaultValue={user.email || ""} disabled />
              </div>
              {user.doctorProfile && (
                <>
@@ -159,17 +211,65 @@ export function SettingsForm({ user, preferences }: SettingsFormProps) {
                 <Button variant="outline" className="w-full justify-start glass text-xs h-10">Update Password</Button>
               </DialogTrigger>
               <DialogContent className="glass-strong border-border/60">
-                <DialogHeader>
-                  <DialogTitle>Update Password</DialogTitle>
-                  <DialogDescription>
-                    For your security, please contact your hospital administrator to reset your password, or use the "Forgot Password" flow on the login page.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="pt-4 flex justify-end">
-                  <Button onClick={() => setPasswordModal(false)} className="bg-primary text-primary-foreground shadow-glow">
-                    Got it
-                  </Button>
-                </div>
+                <form 
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    const formData = new FormData(e.currentTarget);
+                    const current = formData.get("current") as string;
+                    const next = formData.get("next") as string;
+                    const confirm = formData.get("confirm") as string;
+
+                    if (next !== confirm) {
+                      toast.error("Passwords do not match");
+                      return;
+                    }
+
+                    setLoading(true);
+                    const res = await updatePassword(current, next);
+                    setLoading(false);
+
+                    if (res.success) {
+                      toast.success("Password updated successfully");
+                      setPasswordModal(false);
+                      (e.target as HTMLFormElement).reset();
+                    } else {
+                      toast.error(res.error || "Failed to update password");
+                    }
+                  }}
+                  className="space-y-4 pt-4"
+                >
+                  <DialogHeader>
+                    <DialogTitle>Update Password</DialogTitle>
+                    <DialogDescription>
+                      Ensure your account is using a long, random password to stay secure.
+                    </DialogDescription>
+                  </DialogHeader>
+                  
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <Label className="text-[10px] uppercase font-bold tracking-widest ml-1">Current Password</Label>
+                      <Input name="current" type="password" required className="bg-background/50" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[10px] uppercase font-bold tracking-widest ml-1">New Password</Label>
+                      <Input name="next" type="password" required className="bg-background/50" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[10px] uppercase font-bold tracking-widest ml-1">Confirm New Password</Label>
+                      <Input name="confirm" type="password" required className="bg-background/50" />
+                    </div>
+                  </div>
+
+                  <DialogFooter className="pt-4">
+                    <Button type="button" variant="ghost" onClick={() => setPasswordModal(false)} disabled={loading}>
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={loading} className="bg-primary text-primary-foreground shadow-glow font-bold">
+                      {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                      Update Password
+                    </Button>
+                  </DialogFooter>
+                </form>
               </DialogContent>
             </Dialog>
           </div>

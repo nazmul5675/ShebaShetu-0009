@@ -3,13 +3,15 @@
 import { useState } from "react";
 import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 export function DashboardSearch() {
+  const router = useRouter();
   const [query, setQuery] = useState("");
 
   const triggerSearch = () => {
     if (query.trim().length >= 2) {
-      window.dispatchEvent(new CustomEvent("app-search", { detail: query.trim() }));
+      router.push(`/reception/queue?q=${encodeURIComponent(query.trim())}`);
     }
   };
 

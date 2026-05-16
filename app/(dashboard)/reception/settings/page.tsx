@@ -14,7 +14,10 @@ export default async function ReceptionSettingsPage() {
       where: { id: userId },
       select: { 
         id: true, name: true, email: true, image: true,
-        receptionProfile: true
+        role: true,
+        receptionProfile: {
+          include: { hospital: true }
+        }
       }
     }),
     prisma.userPreference.findUnique({

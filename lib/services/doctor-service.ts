@@ -65,18 +65,23 @@ async function getAverageWaitTime(doctorId: string) {
     include: { queueToken: true }
   });
 
-  if (completedAppts.length === 0) return "N/A";
+  const finishedAppointments = completedAppts.filter((appt) => appt.queueToken?.calledAt);
+  if (finishedAppointments.length === 0) return "00:00";
 
-  const totalWait = completedAppts.reduce((acc, appt) => {
-    if (appt.queueToken?.calledAt) {
-      const wait = appt.updatedAt.getTime() - appt.queueToken.calledAt.getTime();
-      return acc + wait;
-    }
-    return acc;
+  const totalWait = finishedAppointments.reduce((acc, appt) => {
+    const calledAt = appt.queueToken?.calledAt;
+    if (!calledAt) return acc;
+    const wait = appt.updatedAt.getTime() - calledAt.getTime();
+    return acc + wait;
   }, 0);
 
-  const avgMinutes = Math.round(totalWait / completedAppts.length / 60000);
-  return `${avgMinutes}m`;
+  const avgMs = totalWait / finishedAppointments.length;
+  const minutes = Math.floor(avgMs / 60000);
+  const seconds = Math.round((avgMs % 60000) / 1000);
+  const normalizedMinutes = minutes + (seconds === 60 ? 1 : 0);
+  const normalizedSeconds = seconds === 60 ? 0 : seconds;
+
+  return `${String(normalizedMinutes).padStart(2, "0")}:${String(normalizedSeconds).padStart(2, "0")}`;
 }
 
 export async function getDoctorAppointments(userId: string) {

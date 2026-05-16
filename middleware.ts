@@ -4,10 +4,29 @@ import { NextResponse } from "next/server";
 
 const { auth } = NextAuth(authConfig);
 
+type SessionUser = {
+  role?: string;
+};
+
+function getDashboardPath(role?: string) {
+  switch (role) {
+    case "DOCTOR":
+      return "/doctor/dashboard";
+    case "RECEPTION":
+      return "/reception/dashboard";
+    case "ADMIN":
+    case "SUPER_ADMIN":
+      return "/admin/dashboard";
+    case "PATIENT":
+    default:
+      return "/patient/dashboard";
+  }
+}
+
 export default auth((req) => {
   const { nextUrl } = req;
   const isLoggedIn = !!req.auth;
-  const role = (req.auth?.user as any)?.role;
+  const role = (req.auth?.user as SessionUser | undefined)?.role;
 
   // 1. Define Route Categories
   const isApiAuthRoute = nextUrl.pathname.startsWith("/api/auth");
@@ -27,7 +46,7 @@ export default auth((req) => {
   if (isPublicRoute) {
     if (isLoggedIn && role) {
       // Redirect to respective dashboard if already logged in
-      return NextResponse.redirect(new URL(`/${role.toLowerCase()}/dashboard`, nextUrl));
+      return NextResponse.redirect(new URL(getDashboardPath(role), nextUrl));
     }
     return NextResponse.next();
   }

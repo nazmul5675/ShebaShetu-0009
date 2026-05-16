@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { GlassCard } from "@/components/GlassCard";
 import {
   Users2, Search, ArrowRightLeft,
@@ -13,17 +13,25 @@ import {
   DropdownMenu, DropdownMenuContent,
   DropdownMenuItem, DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
-import { updateQueueStatus } from "@/app/actions/reception";
+import { updateQueueStatus, moveQueuePosition } from "@/app/actions/reception";
 import { toast } from "sonner";
 import { QueueStatus } from "@prisma/client";
+import { useSearchParams } from "next/navigation";
 
 interface QueueManagerProps {
   queue: any[];
+  actionsDisabled?: boolean;
 }
 
-export function QueueManager({ queue }: QueueManagerProps) {
+export function QueueManager({ queue, actionsDisabled = false }: QueueManagerProps) {
+  const searchParams = useSearchParams();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
+
+  useEffect(() => {
+    const q = searchParams.get("q");
+    if (q) setSearch(q);
+  }, [searchParams]);
 
   const filtered = queue.filter(apt => {
     const s = search.toLowerCase();
@@ -39,9 +47,23 @@ export function QueueManager({ queue }: QueueManagerProps) {
   });
 
   const handleStatusUpdate = async (tokenId: string, status: QueueStatus) => {
+    if (actionsDisabled) {
+      toast.error("No hospital assigned. Please contact admin.");
+      return;
+    }
     const res = await updateQueueStatus(tokenId, status);
     if (res.success) toast.success(`Status updated to ${status}`);
     else toast.error(res.error || "Failed to update status");
+  };
+
+  const handleMove = async (tokenId: string, direction: "UP" | "DOWN") => {
+    if (actionsDisabled) {
+      toast.error("No hospital assigned.");
+      return;
+    }
+    const res = await moveQueuePosition(tokenId, direction);
+    if (res.success) toast.success(`Token moved ${direction.toLowerCase()}`);
+    else toast.error(res.error || "Failed to move token");
   };
 
   return (
@@ -121,10 +143,22 @@ export function QueueManager({ queue }: QueueManagerProps) {
 
                 <div className="flex items-center gap-2">
                   <div className="hidden sm:flex items-center gap-1 bg-secondary/30 rounded-xl p-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-background/80" title="Move Up">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-8 w-8 rounded-lg hover:bg-background/80" 
+                      disabled={actionsDisabled || apt.queueToken.status !== 'WAITING'}
+                      onClick={() => handleMove(apt.queueToken.id, "UP")}
+                    >
                       <ChevronUp className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-background/80" title="Move Down">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-8 w-8 rounded-lg hover:bg-background/80" 
+                      disabled={actionsDisabled || apt.queueToken.status !== 'WAITING'}
+                      onClick={() => handleMove(apt.queueToken.id, "DOWN")}
+                    >
                       <ChevronDown className="h-4 w-4" />
                     </Button>
                   </div>
@@ -137,22 +171,21 @@ export function QueueManager({ queue }: QueueManagerProps) {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="glass-strong min-w-[180px] p-2 rounded-2xl">
                       <div className="px-2 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Actions</div>
-                      <DropdownMenuItem className="rounded-lg gap-2 cursor-pointer" onClick={() => window.location.href = `/reception/patient/${apt.patient.id}`}>
+                      <DropdownMenuItem disabled className="rounded-lg gap-2">
                         <User className="h-4 w-4" /> View Patient Details
                       </DropdownMenuItem>
-                      <div className="my-1 border-t border-border/40" />
                       <div className="px-2 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Update Status</div>
-                      <DropdownMenuItem className="rounded-lg gap-2 cursor-pointer" onClick={() => handleStatusUpdate(apt.queueToken.id, "CALLED")}>
+                      <DropdownMenuItem disabled={actionsDisabled} className="rounded-lg gap-2 cursor-pointer" onClick={() => handleStatusUpdate(apt.queueToken.id, "CALLED")}>
                         <div className="h-2 w-2 rounded-full bg-blue-500" /> Call Patient
                       </DropdownMenuItem>
-                      <DropdownMenuItem className="rounded-lg gap-2 cursor-pointer" onClick={() => handleStatusUpdate(apt.queueToken.id, "IN_PROGRESS")}>
+                      <DropdownMenuItem disabled={actionsDisabled} className="rounded-lg gap-2 cursor-pointer" onClick={() => handleStatusUpdate(apt.queueToken.id, "IN_PROGRESS")}>
                         <div className="h-2 w-2 rounded-full bg-amber-500" /> Start Consultation
                       </DropdownMenuItem>
-                      <DropdownMenuItem className="rounded-lg gap-2 cursor-pointer" onClick={() => handleStatusUpdate(apt.queueToken.id, "WAITING")}>
+                      <DropdownMenuItem disabled={actionsDisabled} className="rounded-lg gap-2 cursor-pointer" onClick={() => handleStatusUpdate(apt.queueToken.id, "WAITING")}>
                         <div className="h-2 w-2 rounded-full bg-gray-500" /> Back to Waiting
                       </DropdownMenuItem>
                       <div className="my-1 border-t border-border/40" />
-                      <DropdownMenuItem className="rounded-lg gap-2 cursor-pointer text-destructive focus:text-destructive" onClick={() => handleStatusUpdate(apt.queueToken.id, "CANCELLED")}>
+                      <DropdownMenuItem disabled={actionsDisabled} className="rounded-lg gap-2 cursor-pointer text-destructive focus:text-destructive" onClick={() => handleStatusUpdate(apt.queueToken.id, "CANCELLED")}>
                         <Trash2 className="h-4 w-4" /> Cancel Token
                       </DropdownMenuItem>
                     </DropdownMenuContent>

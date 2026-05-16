@@ -8,6 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { getReceptionStats, getRecentCheckIns, getActiveDoctors } from "@/lib/services/reception-service";
+import { prisma } from "@/lib/db";
 import { format } from "date-fns";
 import { StatusPill } from "@/components/StatusPill";
 import { DashboardSearch } from "@/components/reception/DashboardSearch";
@@ -15,12 +16,27 @@ import { DashboardSearch } from "@/components/reception/DashboardSearch";
 export default async function ReceptionDashboard() {
   const session = await auth();
   if (!session?.user) redirect("/login");
+  const userId = (session.user as { id?: string }).id;
+  if (!userId) redirect("/login");
 
-  const [stats, recentCheckIns, activeDoctors] = await Promise.all([
-    getReceptionStats(),
-    getRecentCheckIns(),
-    getActiveDoctors()
-  ]);
+  const receptionProfile = await prisma.receptionProfile.findUnique({
+    where: { userId },
+    include: { hospital: true },
+  });
+
+  const hospitalId = receptionProfile?.hospitalId || undefined;
+
+  const [stats, recentCheckIns, activeDoctors] = hospitalId
+    ? await Promise.all([
+        getReceptionStats(hospitalId),
+        getRecentCheckIns(5, hospitalId),
+        getActiveDoctors(hospitalId)
+      ])
+    : [
+        { activeQueues: 0, totalTokens: 0, apptsRemaining: 0, staffActive: 0 },
+        [],
+        [],
+      ];
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-10">
@@ -29,14 +45,16 @@ export default async function ReceptionDashboard() {
           <div className="text-[10px] uppercase font-black tracking-[0.2em] text-primary/80 mb-1">Reception · Control Center</div>
           <h1 className="text-4xl font-black tracking-tight mt-1">Hello, {session.user.name?.split(' ')[0]} 👋</h1>
           <p className="text-sm text-muted-foreground/80 mt-1">
-            {stats.totalTokens > 0 ? (
+            {!hospitalId ? (
+              "No hospital assigned. Please contact admin before managing check-ins."
+            ) : stats.totalTokens > 0 ? (
               <>System is active with <span className="text-primary font-bold">{stats.totalTokens}</span> tokens issued today.</>
             ) : (
               "System is ready for check-ins. No active sessions currently."
             )}
           </p>
         </div>
-        <Link href="/reception/queue?action=checkin">
+        <Link href={hospitalId ? "/reception/queue?action=checkin" : "/reception/queue"}>
           <Button className="bg-primary text-primary-foreground shadow-glow h-12 rounded-2xl px-6 font-bold text-sm transition-all active:scale-95">
             <Plus className="h-5 w-5 mr-2" /> New Check-in
           </Button>

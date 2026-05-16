@@ -9,12 +9,20 @@ const registerSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
-  role: z.enum(["PATIENT", "DOCTOR", "RECEPTION", "ADMIN"] as const),
+  role: z.enum(["PATIENT", "DOCTOR", "RECEPTION"] as const),
 });
 
 export async function register(formData: FormData) {
   try {
     const rawData = Object.fromEntries(formData.entries());
+
+    if (rawData.role === "ADMIN" || rawData.role === "SUPER_ADMIN") {
+      return {
+        success: false,
+        error: "Admin accounts must be created by an existing administrator.",
+      };
+    }
+
     const validated = registerSchema.safeParse(rawData);
 
     if (!validated.success) {

@@ -2,7 +2,7 @@ import { prisma } from "@/lib/db";
 import { AppointmentStatus, QueueStatus } from "@prisma/client";
 import { startOfDay, endOfDay } from "date-fns";
 
-export async function getReceptionStats() {
+export async function getReceptionStats(hospitalId?: string) {
   const today = new Date();
   const start = startOfDay(today);
   const end = endOfDay(today);
@@ -13,6 +13,7 @@ export async function getReceptionStats() {
       where: {
         appointments: {
           some: {
+            ...(hospitalId ? { hospitalId } : {}),
             scheduledAt: { gte: start, lte: end },
             queueToken: {
               status: { in: [QueueStatus.WAITING, QueueStatus.CALLED, QueueStatus.IN_PROGRESS] }
@@ -24,20 +25,36 @@ export async function getReceptionStats() {
     // Total Tokens issued today
     prisma.queueToken.count({
       where: {
+        ...(hospitalId
+          ? {
+              appointment: {
+                hospitalId,
+              },
+            }
+          : {}),
         createdAt: { gte: start, lte: end }
       }
     }),
     // Appointments Remaining: PENDING or CONFIRMED for today
     prisma.appointment.count({
       where: {
+        ...(hospitalId ? { hospitalId } : {}),
         scheduledAt: { gte: start, lte: end },
         status: { in: [AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED] }
       }
     }),
-    // Staff Active: Just a count of doctors for now as a placeholder for "Staff Active"
+    // Staff Active: Count doctors assigned to this hospital
     prisma.doctorProfile.count({
       where: {
-        user: { isActive: true }
+        user: { isActive: true },
+        ...(hospitalId
+          ? {
+              OR: [
+                { hospitalIds: { has: hospitalId } },
+                { departments: { some: { hospitalId } } },
+              ],
+            }
+          : {}),
       }
     })
   ]);
@@ -50,9 +67,10 @@ export async function getReceptionStats() {
   };
 }
 
-export async function getRecentCheckIns(limit = 5) {
+export async function getRecentCheckIns(limit = 5, hospitalId?: string) {
   return prisma.appointment.findMany({
     where: {
+      ...(hospitalId ? { hospitalId } : {}),
       status: { in: [AppointmentStatus.CHECKED_IN, AppointmentStatus.IN_PROGRESS] }
     },
     include: {
@@ -65,11 +83,18 @@ export async function getRecentCheckIns(limit = 5) {
   });
 }
 
-export async function getQueueMovements() {
-  // This could be from ActivityLog or just recent status changes
+export async function getQueueMovements(hospitalId?: string) {
+  // Filter activity logs related to tokens in the current hospital
   return prisma.activityLog.findMany({
     where: {
-      entityType: "QueueToken"
+      entityType: { in: ["QueueToken", "Appointment"] },
+      ...(hospitalId ? {
+        OR: [
+          { action: "CHECK_IN" },
+          { action: { contains: "QUEUE" } },
+          { action: { contains: "TOKEN" } }
+        ],
+      } : {})
     },
     include: {
       user: true
@@ -79,10 +104,18 @@ export async function getQueueMovements() {
   });
 }
 
-export async function getActiveDoctors() {
+export async function getActiveDoctors(hospitalId?: string) {
   return prisma.doctorProfile.findMany({
     where: {
-      user: { isActive: true }
+      user: { isActive: true },
+      ...(hospitalId
+        ? {
+            OR: [
+              { hospitalIds: { has: hospitalId } },
+              { departments: { some: { hospitalId } } },
+            ],
+          }
+        : {}),
     },
     include: {
       user: true,
@@ -91,12 +124,13 @@ export async function getActiveDoctors() {
   });
 }
 
-export async function getPendingCheckIns() {
+export async function getPendingCheckIns(hospitalId?: string) {
   const start = startOfDay(new Date());
   const end = endOfDay(new Date());
 
   return prisma.appointment.findMany({
     where: {
+      ...(hospitalId ? { hospitalId } : {}),
       scheduledAt: { gte: start, lte: end },
       status: { in: [AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED] }
     },
@@ -109,12 +143,13 @@ export async function getPendingCheckIns() {
   });
 }
 
-export async function getFullQueue() {
+export async function getFullQueue(hospitalId?: string) {
   const start = startOfDay(new Date());
   const end = endOfDay(new Date());
 
   return prisma.appointment.findMany({
     where: {
+      ...(hospitalId ? { hospitalId } : {}),
       scheduledAt: { gte: start, lte: end },
       queueToken: { isNot: null }
     },
@@ -129,8 +164,19 @@ export async function getFullQueue() {
   });
 }
 
-export async function getDoctorsWithSchedules() {
+export async function getDoctorsWithSchedules(hospitalId?: string) {
   return prisma.doctorProfile.findMany({
+    where: {
+      user: { isActive: true },
+      ...(hospitalId
+        ? {
+            OR: [
+              { hospitalIds: { has: hospitalId } },
+              { departments: { some: { hospitalId } } },
+            ],
+          }
+        : {}),
+    },
     include: {
       user: true,
       schedules: {

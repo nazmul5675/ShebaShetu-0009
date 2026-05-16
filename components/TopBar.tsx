@@ -2,6 +2,7 @@
 
 import { Bell, Search } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { formatDistanceToNow } from "date-fns";
 
@@ -27,6 +28,16 @@ interface TopBarProps {
   };
 }
 
+type Role = "PATIENT" | "RECEPTION" | "DOCTOR" | "ADMIN" | "SUPER_ADMIN";
+type NotificationItem = {
+  id: string;
+  title: string;
+  message: string;
+  isRead: boolean;
+  link?: string | null;
+  createdAt: string | Date;
+};
+
 function getRoleBasePath(role?: string) {
   switch (role) {
     case "PATIENT":
@@ -45,7 +56,8 @@ function getRoleBasePath(role?: string) {
 }
 
 export function TopBar({ user }: TopBarProps) {
-  const { notifications, unreadCount, markRead } = useNotifications();
+  const router = useRouter();
+  const { notifications, unreadCount, markReadAsync } = useNotifications();
 
   const initials =
     user.name
@@ -94,7 +106,7 @@ export function TopBar({ user }: TopBarProps) {
         </form>
 
         <div className="ml-auto flex items-center gap-2 sm:gap-3">
-          <RoleBadge role={user.role as any} />
+          <RoleBadge role={user.role as Role | undefined} />
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -124,14 +136,19 @@ export function TopBar({ user }: TopBarProps) {
 
               <div className="max-h-80 overflow-y-auto">
                 {notifications.length > 0 ? (
-                  notifications.map((n: any) => (
+                  notifications.map((n: NotificationItem) => (
                     <DropdownMenuItem
                       key={n.id}
                       className={cn(
                         "flex flex-col items-start gap-1 p-3 cursor-pointer",
                         !n.isRead && "bg-primary/5"
                       )}
-                      onClick={() => markRead(n.id)}
+                      onClick={async () => {
+                        await markReadAsync(n.id);
+                        if (n.link) {
+                          router.push(n.link);
+                        }
+                      }}
                     >
                       <div className="text-xs font-bold">{n.title}</div>
 

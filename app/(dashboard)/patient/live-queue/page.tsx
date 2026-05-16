@@ -9,7 +9,10 @@ export default async function LiveQueuePage() {
   const session = await auth();
   if (!session?.user) redirect("/login");
 
-  const activeQueue = await getActiveQueueStatus((session.user as any).id);
+  const userId = (session.user as { id?: string }).id;
+  if (!userId) redirect("/login");
+
+  const activeQueue = await getActiveQueueStatus(userId);
   const peopleAhead = activeQueue ? await getPeopleAhead(activeQueue.id) : [];
 
   return (
@@ -28,7 +31,7 @@ export default async function LiveQueuePage() {
             tokenNumber={activeQueue.queueToken?.tokenNumber}
             departmentName={activeQueue.department.name}
             doctorName={activeQueue.doctor.user.name || "Doctor"}
-            roomNumber={(activeQueue.doctor as any).roomNumber || "204"}
+            roomNumber={activeQueue.doctor.roomNumber || "TBA"}
             initialAheadCount={activeQueue.queueToken?.position ? activeQueue.queueToken.position - 1 : 0}
           />
 

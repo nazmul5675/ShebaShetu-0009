@@ -15,6 +15,7 @@ export default async function BookingPage({
 
   // Optimized: Fetching from cache
   const departments = await getCachedDepartments();
+  const serializedDepartments = JSON.parse(JSON.stringify(departments));
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-10">
@@ -28,7 +29,7 @@ export default async function BookingPage({
         </div>
       </div>
 
-      <BookingForm departments={departments as any[]} initialDept={dept} />
+      <BookingForm departments={serializedDepartments} initialDept={dept} />
     </div>
   );
 }

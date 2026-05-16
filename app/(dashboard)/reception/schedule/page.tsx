@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
+import { prisma } from "@/lib/db";
 import { getDoctorsWithSchedules } from "@/lib/services/reception-service";
 import { DoctorScheduleView } from "@/components/reception/DoctorScheduleView";
 
@@ -7,7 +8,13 @@ export default async function ReceptionSchedulePage() {
   const session = await auth();
   if (!session?.user) redirect("/login");
 
-  const doctors = await getDoctorsWithSchedules();
+  const userId = (session.user as any).id;
+  const profile = await prisma.receptionProfile.findUnique({
+    where: { userId },
+    select: { hospitalId: true }
+  });
+
+  const doctors = await getDoctorsWithSchedules(profile?.hospitalId || undefined);
   const serializedDoctors = JSON.parse(JSON.stringify(doctors));
 
   return (

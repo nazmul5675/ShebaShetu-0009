@@ -3,16 +3,22 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { AppointmentStatus } from "@prisma/client";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { z } from "zod";
 import { format } from "date-fns";
 
 const bookingSchema = z.object({
   doctorId: z.string().min(1, "Please select a doctor"),
   departmentId: z.string().min(1, "Please select a department"),
-  scheduledAt: z.string().min(1, "Please select a date and time"),
+  scheduleSlotId: z.string().min(1, "Please select an available slot"),
   symptoms: z.string().optional(),
 });
+
+type SessionUser = {
+  id?: string;
+  role?: string;
+  name?: string | null;
+};
 
 export async function bookAppointment(formData: FormData) {
   try {
@@ -21,7 +27,12 @@ export async function bookAppointment(formData: FormData) {
       return { success: false, error: "Unauthorized" };
     }
 
-    const userId = (session.user as any).id;
+    const sessionUser = session.user as SessionUser;
+    if (!sessionUser.id || sessionUser.role !== "PATIENT") {
+      return { success: false, error: "Only patients can book appointments." };
+    }
+
+    const userId = sessionUser.id;
     
     // Fetch and verify patient profile
     const patient = await prisma.patientProfile.findUnique({
@@ -36,7 +47,7 @@ export async function bookAppointment(formData: FormData) {
     const rawData = {
       doctorId: formData.get("doctorId"),
       departmentId: formData.get("departmentId"),
-      scheduledAt: formData.get("scheduledAt"),
+      scheduleSlotId: formData.get("scheduleSlotId"),
       symptoms: formData.get("symptoms"),
     };
 
@@ -50,38 +61,71 @@ export async function bookAppointment(formData: FormData) {
       };
     }
 
-    const { doctorId, departmentId, scheduledAt, symptoms } = validated.data;
+    const { doctorId, departmentId, scheduleSlotId, symptoms } = validated.data;
 
-    // Concurrency Check: Ensure slot isn't already taken or doctor is available
-    // For now, we'll check if the doctor has any other appointment at exactly the same time
-    const existingAppointment = await prisma.appointment.findFirst({
-      where: {
-        doctorId,
-        scheduledAt: new Date(scheduledAt),
-        status: { not: AppointmentStatus.CANCELLED }
-      }
-    });
+    const [slot, department] = await Promise.all([
+      prisma.scheduleSlot.findUnique({
+        where: { id: scheduleSlotId },
+        include: {
+          doctor: {
+            select: {
+              id: true,
+              userId: true,
+              departmentIds: true,
+            },
+          },
+          appointment: { select: { id: true } },
+        },
+      }),
+      prisma.department.findUnique({
+        where: { id: departmentId },
+        select: { id: true, doctorIds: true },
+      }),
+    ]);
 
-    if (existingAppointment) {
-      return { success: false, error: "This time slot is already booked. Please choose another time." };
+    if (!slot || !department) {
+      return { success: false, error: "Selected slot or department was not found." };
     }
 
-    // Fetch a default hospital if none specified
-    const hospital = await prisma.hospital.findFirst();
-    if (!hospital) {
-      return { success: false, error: "System configuration error: No hospital found." };
+    if (slot.doctorId !== doctorId) {
+      return { success: false, error: "Selected slot does not belong to this doctor." };
     }
 
-    const appointment = await prisma.appointment.create({
-      data: {
-        patientId: patient.id,
-        doctorId,
-        departmentId,
-        hospitalId: hospital.id,
-        scheduledAt: new Date(scheduledAt),
-        symptoms,
-        status: AppointmentStatus.PENDING,
-      }
+    if (!slot.isAvailable || slot.isBooked || slot.appointment || slot.startTime < new Date()) {
+      return { success: false, error: "This slot is no longer available." };
+    }
+
+    const doctorDepartmentMatch =
+      slot.doctor.departmentIds.includes(departmentId) ||
+      department.doctorIds.includes(doctorId);
+
+    if (!doctorDepartmentMatch) {
+      return { success: false, error: "Doctor is not assigned to the selected department." };
+    }
+
+    const appointment = await prisma.$transaction(async (tx) => {
+      const createdAppointment = await tx.appointment.create({
+        data: {
+          patientId: patient.id,
+          doctorId,
+          departmentId,
+          hospitalId: slot.hospitalId,
+          scheduleSlotId,
+          scheduledAt: slot.startTime,
+          symptoms,
+          status: AppointmentStatus.PENDING,
+        },
+      });
+
+      await tx.scheduleSlot.update({
+        where: { id: scheduleSlotId },
+        data: {
+          isAvailable: false,
+          isBooked: true,
+        },
+      });
+
+      return createdAppointment;
     });
 
     // Notify Doctor
@@ -95,7 +139,7 @@ export async function bookAppointment(formData: FormData) {
         data: {
           userId: doctor.userId,
           title: "New Appointment Request",
-          message: `A new patient (${session.user.name}) has scheduled an appointment for ${format(new Date(scheduledAt), "p")}.`,
+          message: `A new patient (${sessionUser.name || "Patient"}) has scheduled an appointment for ${format(slot.startTime, "p")}.`,
           type: "APPOINTMENT",
           link: "/doctor/dashboard"
         }
@@ -105,6 +149,8 @@ export async function bookAppointment(formData: FormData) {
     revalidatePath("/doctor/dashboard");
     revalidatePath("/patient/dashboard");
     revalidatePath("/patient/appointments");
+    revalidatePath("/patient/booking");
+    revalidateTag("departments");
 
     return { success: true, appointmentId: appointment.id };
   } catch (error) {

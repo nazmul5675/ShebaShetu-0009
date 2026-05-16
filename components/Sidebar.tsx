@@ -6,6 +6,7 @@ import { Logo } from "./Logo";
 import {
   Home, Stethoscope, CalendarDays, Activity, FolderHeart, Sparkles,
   ListChecks, Users2, CalendarRange, ClipboardList, LifeBuoy, Settings,
+  ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -31,19 +32,35 @@ const DOCTOR: Item[] = [
   { to: "/doctor/schedule",     label: "Schedule",      icon: CalendarDays },
 ];
 
+const ADMIN: Item[] = [
+  { to: "/admin/dashboard", label: "Dashboard", icon: Home },
+  { to: "/admin/users", label: "User Management", icon: Users2 },
+  { to: "/admin/support", label: "Support Tickets", icon: LifeBuoy },
+  { to: "/admin/settings", label: "Settings", icon: Settings },
+];
+
 interface SidebarProps {
-  role: "PATIENT" | "RECEPTION" | "DOCTOR" | "ADMIN";
+  role: "PATIENT" | "RECEPTION" | "DOCTOR" | "ADMIN" | "SUPER_ADMIN";
 }
 
 export function useNavItems(role: SidebarProps["role"]) {
-  if (role === "RECEPTION" || role === "ADMIN") return RECEPTION;
+  if (role === "ADMIN" || role === "SUPER_ADMIN") return ADMIN;
+  if (role === "RECEPTION") return RECEPTION;
   if (role === "DOCTOR") return DOCTOR;
   return PATIENT;
+}
+
+function getRoleBasePath(role: SidebarProps["role"]) {
+  if (role === "ADMIN" || role === "SUPER_ADMIN") return "/admin";
+  if (role === "DOCTOR") return "/doctor";
+  if (role === "RECEPTION") return "/reception";
+  return "/patient";
 }
 
 export function Sidebar({ role }: SidebarProps) {
   const items = useNavItems(role);
   const pathname = usePathname();
+  const roleBasePath = getRoleBasePath(role);
 
   return (
     <aside className="hidden lg:flex sticky top-0 h-screen w-64 shrink-0 flex-col border-r border-border/60 bg-sidebar/60 backdrop-blur-xl">
@@ -78,14 +95,18 @@ export function Sidebar({ role }: SidebarProps) {
 
       <div className="m-3 glass-strong rounded-2xl p-4">
         <div className="flex items-center gap-2 mb-1.5">
-          <Stethoscope className="h-4 w-4 text-primary" />
+          {role === "ADMIN" || role === "SUPER_ADMIN" ? (
+            <ShieldCheck className="h-4 w-4 text-primary" />
+          ) : (
+            <Stethoscope className="h-4 w-4 text-primary" />
+          )}
           <div className="text-xs font-semibold">Need help?</div>
         </div>
         <p className="text-[11px] text-muted-foreground leading-relaxed mb-3">
           Reach our 24/7 hospital coordination desk for any visit.
         </p>
         <Link 
-          href={`/${role.toLowerCase()}/support`}
+          href={`${roleBasePath}/support`}
           className="w-full block"
         >
           <button className="w-full rounded-lg bg-gradient-emerald text-primary-foreground text-xs font-semibold py-2 shadow-glow">
@@ -97,7 +118,7 @@ export function Sidebar({ role }: SidebarProps) {
       <div className="px-3 py-3 border-t border-border/60 flex items-center gap-2 text-[11px] text-muted-foreground">
         <LifeBuoy className="h-3.5 w-3.5" />
         <span>v1.0 · Next.js migration</span>
-        <Link href={`/${role.toLowerCase()}/settings`} className="ml-auto">
+        <Link href={`${roleBasePath}/settings`} className="ml-auto">
           <Settings className="h-3.5 w-3.5 hover:text-foreground cursor-pointer" />
         </Link>
       </div>

@@ -10,34 +10,80 @@ import {
   SelectTrigger, SelectValue
 } from "@/components/ui/select";
 import {
-  CalendarDays, Clock, User,
-  Stethoscope, ShieldCheck, ArrowRight,
-  CheckCircle2, AlertCircle
+  Clock, ShieldCheck, ArrowRight, CheckCircle2
 } from "lucide-react";
 import { bookAppointment } from "@/app/actions/appointments";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { cn } from "@/lib/utils";
 
 interface BookingFormProps {
-  departments: any[];
+  departments: DepartmentOption[];
   initialDept?: string;
 }
+
+type ScheduleSlotOption = {
+  id: string;
+  startTime: string;
+  endTime: string;
+  hospitalId: string;
+  hospital: {
+    id: string;
+    name: string;
+    address?: string | null;
+  };
+};
+
+type DoctorOption = {
+  id: string;
+  specialization: string;
+  consultationFee?: number | null;
+  roomNumber?: string | null;
+  user: {
+    name: string | null;
+    image?: string | null;
+  };
+  hospitals: Array<{
+    id: string;
+    name: string;
+  }>;
+  schedules: ScheduleSlotOption[];
+};
+
+type DepartmentOption = {
+  id: string;
+  name: string;
+  description?: string | null;
+  hospital?: {
+    id: string;
+    name: string;
+  } | null;
+  doctors: DoctorOption[];
+};
 
 export function BookingForm({ departments, initialDept }: BookingFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [selectedDeptId, setSelectedDeptId] = useState(departments.find(d => d.name === initialDept)?.id || "");
   const [selectedDocId, setSelectedDocId] = useState("");
-  const [scheduledAt, setScheduledAt] = useState("");
+  const [selectedSlotId, setSelectedSlotId] = useState("");
   const [symptoms, setSymptoms] = useState("");
 
   const selectedDept = departments.find(d => d.id === selectedDeptId);
   const doctors = selectedDept?.doctors || [];
+  const selectedDoctor = doctors.find((doctor) => doctor.id === selectedDocId);
+  const availableSlots = selectedDoctor?.schedules || [];
+  const selectedSlot = availableSlots.find((slot) => slot.id === selectedSlotId);
+  const hasDepartments = departments.length > 0;
+
+  const slotLabel = (slot: ScheduleSlotOption) => {
+    const start = new Date(slot.startTime);
+    const end = new Date(slot.endTime);
+    return `${start.toLocaleDateString([], { month: "short", day: "numeric" })}, ${start.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} - ${end.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+  };
 
   const handleBooking = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedDocId || !scheduledAt) {
+    if (!selectedDocId || !selectedSlotId) {
       toast.error("Please fill in all required fields.");
       return;
     }
@@ -45,7 +91,7 @@ export function BookingForm({ departments, initialDept }: BookingFormProps) {
     const formData = new FormData();
     formData.append("doctorId", selectedDocId);
     formData.append("departmentId", selectedDeptId);
-    formData.append("scheduledAt", scheduledAt);
+    formData.append("scheduleSlotId", selectedSlotId);
     formData.append("symptoms", symptoms);
 
     startTransition(async () => {
@@ -65,7 +111,7 @@ export function BookingForm({ departments, initialDept }: BookingFormProps) {
         <div className="space-y-4">
           <div className="space-y-2">
             <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Specialization</Label>
-            <Select value={selectedDeptId} onValueChange={(val) => { setSelectedDeptId(val); setSelectedDocId(""); }}>
+            <Select value={selectedDeptId} onValueChange={(val) => { setSelectedDeptId(val); setSelectedDocId(""); setSelectedSlotId(""); }} disabled={!hasDepartments}>
               <SelectTrigger className="h-12 glass rounded-xl border-border/40 focus:ring-primary/20">
                 <SelectValue placeholder="Select Department" />
               </SelectTrigger>
@@ -75,36 +121,47 @@ export function BookingForm({ departments, initialDept }: BookingFormProps) {
                 ))}
               </SelectContent>
             </Select>
+            {!hasDepartments && (
+              <p className="text-xs text-muted-foreground">No departments are available yet. Please try again later.</p>
+            )}
           </div>
 
           <div className="space-y-2">
             <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Doctor</Label>
-            <Select value={selectedDocId} onValueChange={setSelectedDocId} disabled={!selectedDeptId}>
+            <Select value={selectedDocId} onValueChange={(value) => { setSelectedDocId(value); setSelectedSlotId(""); }} disabled={!selectedDeptId || doctors.length === 0}>
               <SelectTrigger className="h-12 glass rounded-xl border-border/40 focus:ring-primary/20">
                 <SelectValue placeholder={selectedDeptId ? "Select Doctor" : "Choose department first"} />
               </SelectTrigger>
               <SelectContent className="glass-strong border-border/40">
-                {doctors.map((doc: any) => (
+                {doctors.map((doc) => (
                   <SelectItem key={doc.id} value={doc.id}>
                     {doc.user.name} ({doc.specialization || "General"})
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            {selectedDeptId && doctors.length === 0 && (
+              <p className="text-xs text-muted-foreground">No doctors with available slots are assigned to this department.</p>
+            )}
           </div>
 
           <div className="space-y-2">
-            <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Date & Time</Label>
-            <div className="relative group">
-              <CalendarDays className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-              <input
-                type="datetime-local"
-                className="w-full h-12 glass rounded-xl pl-11 pr-4 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                value={scheduledAt}
-                onChange={(e) => setScheduledAt(e.target.value)}
-                required
-              />
-            </div>
+            <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Available Slot</Label>
+            <Select value={selectedSlotId} onValueChange={setSelectedSlotId} disabled={!selectedDocId || availableSlots.length === 0}>
+              <SelectTrigger className="h-12 glass rounded-xl border-border/40 focus:ring-primary/20">
+                <SelectValue placeholder={selectedDocId ? "Select available slot" : "Choose doctor first"} />
+              </SelectTrigger>
+              <SelectContent className="glass-strong border-border/40">
+                {availableSlots.map((slot) => (
+                  <SelectItem key={slot.id} value={slot.id}>
+                    {slotLabel(slot)} - {slot.hospital.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {selectedDocId && availableSlots.length === 0 && (
+              <p className="text-xs text-muted-foreground">This doctor has no available slots right now.</p>
+            )}
           </div>
         </div>
 
@@ -121,11 +178,20 @@ export function BookingForm({ departments, initialDept }: BookingFormProps) {
 
           <div className="p-4 rounded-xl bg-primary/5 border border-primary/10 space-y-2">
             <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-primary">
-              <ShieldCheck className="h-3.5 w-3.5" /> Instant Confirmation
+              <ShieldCheck className="h-3.5 w-3.5" /> Appointment Details
             </div>
-            <p className="text-[11px] text-muted-foreground leading-relaxed">
-              Your appointment will be confirmed instantly. You can track your position in the live queue on the day of your visit.
-            </p>
+            {selectedDoctor ? (
+              <div className="text-[11px] text-muted-foreground leading-relaxed space-y-1">
+                <p>Dr. {selectedDoctor.user.name || "Assigned doctor"} - {selectedDoctor.specialization}</p>
+                <p>Fee: {selectedDoctor.consultationFee ? `BDT ${selectedDoctor.consultationFee}` : "Not configured"}</p>
+                <p>Room: {selectedDoctor.roomNumber || "Not assigned"}</p>
+                <p>Hospital: {selectedSlot?.hospital.name || selectedDoctor.hospitals[0]?.name || "Select a slot"}</p>
+              </div>
+            ) : (
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                Select a department, doctor, and available schedule slot to book.
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -133,7 +199,7 @@ export function BookingForm({ departments, initialDept }: BookingFormProps) {
       <Button
         type="submit"
         className="w-full bg-primary text-primary-foreground h-14 text-md font-bold rounded-2xl shadow-glow hover:scale-[1.01] active:scale-[0.98] transition-all disabled:opacity-50"
-        disabled={isPending || !selectedDocId || !scheduledAt}
+        disabled={isPending || !selectedDocId || !selectedSlotId}
       >
         {isPending ? "Processing your booking..." : "Confirm & Book Visit"}
         <ArrowRight className="ml-2 h-5 w-5" />

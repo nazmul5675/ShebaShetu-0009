@@ -13,9 +13,11 @@ interface QueueContentProps {
   queue: any[];
   pendingAppointments: any[];
   movements: any[];
+  canManage: boolean;
+  hospitalName: string | null;
 }
 
-export function QueueContent({ queue, pendingAppointments, movements }: QueueContentProps) {
+export function QueueContent({ queue, pendingAppointments, movements, canManage, hospitalName }: QueueContentProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [isCheckInOpen, setIsCheckInOpen] = useState(false);
@@ -44,7 +46,9 @@ export function QueueContent({ queue, pendingAppointments, movements }: QueueCon
           <div className="text-[10px] uppercase font-black tracking-[0.2em] text-primary/80 mb-1">Queue Control</div>
           <h1 className="text-4xl font-black tracking-tight">Queue Manager</h1>
           <p className="text-sm text-muted-foreground/80 mt-1">
-            Monitor and process patient tokens in real-time.
+            {canManage
+              ? `Monitor and process patient tokens for ${hospitalName || "your assigned hospital"}.`
+              : "No hospital assigned. Please contact admin before managing queue actions."}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -75,6 +79,7 @@ export function QueueContent({ queue, pendingAppointments, movements }: QueueCon
           <Button 
             className="bg-primary text-primary-foreground shadow-glow h-12 rounded-2xl px-6 font-bold text-sm transition-all active:scale-95"
             onClick={() => setIsCheckInOpen(true)}
+            disabled={!canManage}
           >
             <Plus className="h-5 w-5 mr-2" /> New Check-in
           </Button>
@@ -83,7 +88,7 @@ export function QueueContent({ queue, pendingAppointments, movements }: QueueCon
 
       <div className="min-h-[60vh]">
         {view === "live" ? (
-          <QueueManager queue={queue} />
+          <QueueManager queue={queue} actionsDisabled={!canManage} />
         ) : (
           <QueueMovements movements={movements} />
         )}
@@ -93,6 +98,7 @@ export function QueueContent({ queue, pendingAppointments, movements }: QueueCon
         open={isCheckInOpen} 
         onOpenChange={closeCheckIn} 
         pendingAppointments={pendingAppointments} 
+        canManage={canManage}
       />
     </div>
   );
