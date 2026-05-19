@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { GlassCard } from "@/components/GlassCard";
 import { Shield, Bell, Loader2, Camera, Check, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -42,9 +43,12 @@ interface SettingsFormProps {
 }
 
 export function SettingsForm({ user, preferences }: SettingsFormProps) {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [prefs, setPrefs] = useState(preferences);
   const [passwordModal, setPasswordModal] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(user.image || null);
+
   const profileLabel =
     user.role === "ADMIN"
       ? "Admin"
@@ -77,15 +81,7 @@ export function SettingsForm({ user, preferences }: SettingsFormProps) {
     const formData = new FormData(e.currentTarget);
     
     const file = (e.currentTarget.elements.namedItem("avatar") as HTMLInputElement).files?.[0];
-    let image = user.image ?? undefined;
-
-    if (file) {
-      image = await new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.readAsDataURL(file);
-      });
-    }
+    let image = avatarPreview ?? user.image ?? undefined;
 
     const res = await updateProfile({
       name: formData.get("name") as string,
@@ -98,8 +94,12 @@ export function SettingsForm({ user, preferences }: SettingsFormProps) {
         : {}),
     });
     setLoading(false);
-    if (res.success) toast.success("Profile updated");
-    else toast.error(res.error);
+    if (res.success) {
+      toast.success("Profile updated");
+      router.refresh();
+    } else {
+      toast.error(res.error);
+    }
   };
 
   return (
@@ -110,9 +110,24 @@ export function SettingsForm({ user, preferences }: SettingsFormProps) {
           <div className="flex flex-col sm:flex-row items-end gap-6">
             <div className="relative group">
               <label className="cursor-pointer">
-                <input type="file" name="avatar" accept="image/*" className="hidden" />
+                <input 
+                  type="file" 
+                  name="avatar" 
+                  accept="image/*" 
+                  className="hidden" 
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onloadend = () => {
+                        setAvatarPreview(reader.result as string);
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                />
                 <div className="h-32 w-32 rounded-[2rem] bg-secondary flex items-center justify-center text-4xl font-bold overflow-hidden border-4 border-background shadow-2xl group-hover:border-primary/40 transition-all duration-500 group-hover:scale-105">
-                  {user.image ? <img src={user.image} alt="Avatar" className="h-full w-full object-cover" /> : user.name?.[0]}
+                  {avatarPreview ? <img src={avatarPreview} alt="Avatar" className="h-full w-full object-cover" /> : user.name?.[0]}
                 </div>
                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-300 grid place-items-center rounded-[2rem] text-white">
                   <Camera className="h-8 w-8" />
@@ -151,7 +166,7 @@ export function SettingsForm({ user, preferences }: SettingsFormProps) {
                     No Hospital Assigned
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    You currently have no hospital assigned. Please contact your system administrator to assign a hospital so you can manage patient queues.
+                    No hospital assigned. Please contact admin.
                   </p>
                 </div>
               </div>

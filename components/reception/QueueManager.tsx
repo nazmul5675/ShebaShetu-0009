@@ -34,13 +34,13 @@ export function QueueManager({ queue, actionsDisabled = false }: QueueManagerPro
   }, [searchParams]);
 
   const filtered = queue.filter(apt => {
-    const s = search.toLowerCase();
+    const s = search.trim().toLowerCase();
     const matchesSearch =
-      apt.patient.user.name?.toLowerCase().includes(s) ||
-      apt.patient.user.email?.toLowerCase().includes(s) ||
-      apt.queueToken?.tokenNumber.toLowerCase().includes(s) ||
-      apt.doctor.user.name?.toLowerCase().includes(s) ||
-      apt.doctor.specialization?.toLowerCase().includes(s);
+      (apt.patient?.user?.name?.toLowerCase()?.includes(s) ?? false) ||
+      (apt.patient?.user?.email?.toLowerCase()?.includes(s) ?? false) ||
+      (apt.queueToken?.tokenNumber?.toLowerCase()?.includes(s) ?? false) ||
+      (apt.doctor?.user?.name?.toLowerCase()?.includes(s) ?? false) ||
+      (apt.doctor?.specialization?.toLowerCase()?.includes(s) ?? false);
 
     const matchesStatus = statusFilter ? apt.queueToken?.status === statusFilter : true;
     return matchesSearch && matchesStatus;
@@ -112,15 +112,15 @@ export function QueueManager({ queue, actionsDisabled = false }: QueueManagerPro
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-3">
-                    <h3 className="text-base font-bold truncate">{apt.patient.user.name}</h3>
-                    <StatusPill status={apt.queueToken?.status.toLowerCase()} className="text-[9px] font-black px-2 py-0.5 rounded-full" />
+                    <h3 className="text-base font-bold truncate">{apt.patient?.user?.name}</h3>
+                    <StatusPill status={apt.queueToken?.status?.toLowerCase()} className="text-[9px] font-black px-2 py-0.5 rounded-full" />
                   </div>
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5 text-xs text-muted-foreground/80">
-                    <span className="font-semibold text-foreground/70">Dr. {apt.doctor.user.name}</span>
+                    <span className="font-semibold text-foreground/70">Dr. {apt.doctor?.user?.name}</span>
                     <span className="opacity-30">•</span>
                     <span className="flex items-center gap-1">
                       <Filter className="h-3 w-3" />
-                      {apt.doctor.specialization}
+                      {apt.doctor?.specialization}
                     </span>
                     {apt.queueToken?.calledAt && (
                       <>
@@ -147,7 +147,7 @@ export function QueueManager({ queue, actionsDisabled = false }: QueueManagerPro
                       variant="ghost" 
                       size="icon" 
                       className="h-8 w-8 rounded-lg hover:bg-background/80" 
-                      disabled={actionsDisabled || apt.queueToken.status !== 'WAITING'}
+                      disabled={actionsDisabled || apt.queueToken?.status !== 'WAITING'}
                       onClick={() => handleMove(apt.queueToken.id, "UP")}
                     >
                       <ChevronUp className="h-4 w-4" />
@@ -156,7 +156,7 @@ export function QueueManager({ queue, actionsDisabled = false }: QueueManagerPro
                       variant="ghost" 
                       size="icon" 
                       className="h-8 w-8 rounded-lg hover:bg-background/80" 
-                      disabled={actionsDisabled || apt.queueToken.status !== 'WAITING'}
+                      disabled={actionsDisabled || apt.queueToken?.status !== 'WAITING'}
                       onClick={() => handleMove(apt.queueToken.id, "DOWN")}
                     >
                       <ChevronDown className="h-4 w-4" />
@@ -171,8 +171,8 @@ export function QueueManager({ queue, actionsDisabled = false }: QueueManagerPro
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="glass-strong min-w-[180px] p-2 rounded-2xl">
                       <div className="px-2 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Actions</div>
-                      <DropdownMenuItem disabled className="rounded-lg gap-2">
-                        <User className="h-4 w-4" /> View Patient Details
+                      <DropdownMenuItem disabled className="rounded-lg gap-2 opacity-50 cursor-not-allowed">
+                        <User className="h-4 w-4" /> View Patient Details (Coming soon)
                       </DropdownMenuItem>
                       <div className="px-2 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Update Status</div>
                       <DropdownMenuItem disabled={actionsDisabled} className="rounded-lg gap-2 cursor-pointer" onClick={() => handleStatusUpdate(apt.queueToken.id, "CALLED")}>
@@ -199,7 +199,7 @@ export function QueueManager({ queue, actionsDisabled = false }: QueueManagerPro
             <div className="h-20 w-20 rounded-full bg-secondary/30 flex items-center justify-center mb-6">
               <Users2 className="h-10 w-10 text-muted-foreground/60" />
             </div>
-            <h3 className="text-lg font-bold">No matches found</h3>
+            <h3 className="text-lg font-bold">No queue items found.</h3>
             <p className="text-sm text-muted-foreground max-w-[250px] mt-2">
               Try adjusting your filters or search query to find the patient you're looking for.
             </p>

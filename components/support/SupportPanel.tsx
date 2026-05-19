@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useState, useTransition, useEffect } from "react";
 import { format } from "date-fns";
 import { Clock, History, LifeBuoy, Loader2, MessageSquare, Send } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -44,6 +44,10 @@ export function SupportPanel({ tickets, activeTicketId, variant = "compact" }: S
   const [activeReplyTicketId, setActiveReplyTicketId] = useState<string | null>(activeTicketId || null);
   const [isSubmittingTicket, startTicketSubmit] = useTransition();
   const [replyingTicketId, setReplyingTicketId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setLocalTickets(tickets);
+  }, [tickets]);
 
   const sortedTickets = useMemo(() => {
     return [...localTickets].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());

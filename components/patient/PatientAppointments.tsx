@@ -17,8 +17,23 @@ export function PatientAppointments({ initialAppointments }: PatientAppointments
   const [search, setSearch] = useState("");
 
   const filtered = initialAppointments.filter((apt) => {
-    const matchesSearch = apt.doctor.user.name.toLowerCase().includes(search.toLowerCase()) || 
-                          apt.department.name.toLowerCase().includes(search.toLowerCase());
+    const searchLower = search.toLowerCase();
+    
+    const aptDate = new Date(apt.scheduledAt);
+    const dateStr1 = format(aptDate, 'd MMM, yyyy').toLowerCase();
+    const dateStr2 = format(aptDate, 'yyyy-MM-dd').toLowerCase();
+    const dateStr3 = format(aptDate, 'MMMM d').toLowerCase();
+    const dateStr4 = format(aptDate, 'EEEE').toLowerCase();
+
+    const matchesSearch = 
+      (apt.doctor?.user?.name?.toLowerCase().includes(searchLower) ?? false) || 
+      (apt.department?.name?.toLowerCase().includes(searchLower) ?? false) ||
+      (apt.hospital?.name?.toLowerCase().includes(searchLower) ?? false) ||
+      (apt.status?.toLowerCase().includes(searchLower) ?? false) ||
+      dateStr1.includes(searchLower) ||
+      dateStr2.includes(searchLower) ||
+      dateStr3.includes(searchLower) ||
+      dateStr4.includes(searchLower);
     
     if (!matchesSearch) return false;
     
@@ -114,7 +129,7 @@ export function PatientAppointments({ initialAppointments }: PatientAppointments
         ) : (
           <div className="py-24 flex flex-col items-center justify-center text-center glass rounded-3xl border-dashed border-2 border-border/60 opacity-60">
             <XCircle className="h-12 w-12 mb-4 text-muted-foreground/30" />
-            <h3 className="text-lg font-bold uppercase tracking-tight">No results found</h3>
+            <h3 className="text-lg font-bold uppercase tracking-tight">No appointments found</h3>
             <p className="text-sm max-w-xs mt-1">
               {search ? "Try adjusting your search terms or filters." : "You haven't booked any medical visits yet."}
             </p>

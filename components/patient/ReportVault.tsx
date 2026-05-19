@@ -19,10 +19,22 @@ export function ReportVault({ initialReports }: ReportVaultProps) {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const filtered = initialReports.filter((r) =>
-    r.title.toLowerCase().includes(search.toLowerCase()) ||
-    (r.doctorName?.toLowerCase() || "").includes(search.toLowerCase())
-  );
+  const filtered = initialReports.filter((r) => {
+    const searchLower = search.toLowerCase();
+    const uploadDate = new Date(r.uploadedAt);
+    const dateStr1 = format(uploadDate, 'd MMM, yyyy').toLowerCase();
+    const dateStr2 = format(uploadDate, 'MMM d, yyyy').toLowerCase();
+    const dateStr3 = format(uploadDate, 'yyyy-MM-dd').toLowerCase();
+
+    return (
+      (r.title?.toLowerCase().includes(searchLower) ?? false) ||
+      (r.type?.toLowerCase().includes(searchLower) ?? false) ||
+      (r.fileName?.toLowerCase().includes(searchLower) ?? false) ||
+      dateStr1.includes(searchLower) ||
+      dateStr2.includes(searchLower) ||
+      dateStr3.includes(searchLower)
+    );
+  });
 
   return (
     <div className="space-y-6">
@@ -30,18 +42,18 @@ export function ReportVault({ initialReports }: ReportVaultProps) {
         <div className="relative group flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
           <input
-            placeholder="Search by report name or doctor..."
+            placeholder="Search by report name, type, file, date..."
             className="w-full glass rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" className="glass rounded-xl h-10 text-[11px] font-bold uppercase tracking-widest">
-            <Calendar className="h-3.5 w-3.5 mr-2" /> All Dates
+          <Button disabled variant="outline" className="glass rounded-xl h-10 text-[11px] font-bold uppercase tracking-widest opacity-50 cursor-not-allowed">
+            <Calendar className="h-3.5 w-3.5 mr-2" /> All Dates (Coming soon)
           </Button>
-          <Button variant="outline" className="glass rounded-xl h-10 text-[11px] font-bold uppercase tracking-widest">
-            Type: All
+          <Button disabled variant="outline" className="glass rounded-xl h-10 text-[11px] font-bold uppercase tracking-widest opacity-50 cursor-not-allowed">
+            Type: All (Coming soon)
           </Button>
         </div>
       </div>
@@ -80,8 +92,10 @@ export function ReportVault({ initialReports }: ReportVaultProps) {
                     <ExternalLink className="h-3.5 w-3.5 mr-1.5" /> View
                   </a>
                 </Button>
-                <Button variant="ghost" className="h-9 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-primary/10 hover:text-primary">
-                  <Download className="h-3.5 w-3.5 mr-1.5" /> Get PDF
+                <Button variant="ghost" className="h-9 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-primary/10 hover:text-primary" asChild>
+                  <a href={report.fileUrl} download={report.fileName || `${report.title}.pdf`} target="_blank" rel="noopener noreferrer">
+                    <Download className="h-3.5 w-3.5 mr-1.5" /> Get PDF
+                  </a>
                 </Button>
               </div>
             </GlassCard>

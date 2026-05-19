@@ -122,7 +122,7 @@ export function BookingForm({ departments, initialDept }: BookingFormProps) {
               </SelectContent>
             </Select>
             {!hasDepartments && (
-              <p className="text-xs text-muted-foreground">No departments are available yet. Please try again later.</p>
+              <p className="text-xs text-muted-foreground">No departments available.</p>
             )}
           </div>
 
@@ -141,7 +141,7 @@ export function BookingForm({ departments, initialDept }: BookingFormProps) {
               </SelectContent>
             </Select>
             {selectedDeptId && doctors.length === 0 && (
-              <p className="text-xs text-muted-foreground">No doctors with available slots are assigned to this department.</p>
+              <p className="text-xs text-muted-foreground">No doctors found for selected department.</p>
             )}
           </div>
 
@@ -160,7 +160,7 @@ export function BookingForm({ departments, initialDept }: BookingFormProps) {
               </SelectContent>
             </Select>
             {selectedDocId && availableSlots.length === 0 && (
-              <p className="text-xs text-muted-foreground">This doctor has no available slots right now.</p>
+              <p className="text-xs text-muted-foreground">No slots available.</p>
             )}
           </div>
         </div>
@@ -186,6 +186,7 @@ export function BookingForm({ departments, initialDept }: BookingFormProps) {
                 <p>Fee: {selectedDoctor.consultationFee ? `BDT ${selectedDoctor.consultationFee}` : "Not configured"}</p>
                 <p>Room: {selectedDoctor.roomNumber || "Not assigned"}</p>
                 <p>Hospital: {selectedSlot?.hospital.name || selectedDoctor.hospitals[0]?.name || "Select a slot"}</p>
+                <p>Department: {selectedDept?.name || "Not available"}</p>
               </div>
             ) : (
               <p className="text-[11px] text-muted-foreground leading-relaxed">

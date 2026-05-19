@@ -1,13 +1,13 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import { getUpcomingAppointments } from "@/lib/services/appointment-service";
+import { getPatientAppointments } from "@/lib/services/appointment-service";
 import { PatientAppointments } from "@/components/patient/PatientAppointments";
 
 export default async function AppointmentsPage() {
   const session = await auth();
   if (!session?.user) redirect("/login");
 
-  const appointments = await getUpcomingAppointments((session.user as any).id);
+  const appointments = await getPatientAppointments((session.user as any).id);
 
   return (
     <div className="space-y-8 max-w-6xl mx-auto pb-10">

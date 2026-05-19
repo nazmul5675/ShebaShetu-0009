@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useState, useTransition, useEffect } from "react";
 import { format } from "date-fns";
 import {
   Clock,
@@ -63,6 +63,10 @@ export function AdminSupportPanel({ tickets, activeTicketId }: AdminSupportPanel
   const [selectedTicketId, setSelectedTicketId] = useState(activeTicketId || tickets[0]?.id || "");
   const [replying, startReply] = useTransition();
   const [updatingStatus, startStatusUpdate] = useTransition();
+
+  useEffect(() => {
+    setLocalTickets(tickets);
+  }, [tickets]);
 
   const sortedTickets = useMemo(() => {
     return [...localTickets].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());

@@ -136,12 +136,12 @@ export function TopBar({ user }: TopBarProps) {
 
               <div className="max-h-80 overflow-y-auto">
                 {notifications.length > 0 ? (
-                  notifications.map((n: NotificationItem) => (
+                   notifications.map((n: NotificationItem) => (
                     <DropdownMenuItem
                       key={n.id}
                       className={cn(
-                        "flex flex-col items-start gap-1 p-3 cursor-pointer",
-                        !n.isRead && "bg-primary/5"
+                        "flex flex-col items-start gap-1.5 p-3 cursor-pointer rounded-lg transition-colors",
+                        !n.isRead ? "bg-primary/10 border-l-2 border-primary pl-2.5" : "hover:bg-muted"
                       )}
                       onClick={async () => {
                         await markReadAsync(n.id);
@@ -150,9 +150,12 @@ export function TopBar({ user }: TopBarProps) {
                         }
                       }}
                     >
-                      <div className="text-xs font-bold">{n.title}</div>
+                      <div className="flex items-center gap-1.5 w-full">
+                        {!n.isRead && <span className="h-2 w-2 rounded-full bg-primary" />}
+                        <div className="text-xs font-bold">{n.title}</div>
+                      </div>
 
-                      <div className="text-[11px] text-muted-foreground line-clamp-2">
+                      <div className="text-[11px] text-foreground/90 font-medium line-clamp-2 leading-relaxed">
                         {n.message}
                       </div>
 
