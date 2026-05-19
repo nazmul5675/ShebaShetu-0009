@@ -12,14 +12,7 @@ export const getCachedDepartments = unstable_cache(
         hospital: true,
         doctors: {
           where: {
-            user: { isActive: true },
-            schedules: {
-              some: {
-                isAvailable: true,
-                isBooked: false,
-                startTime: { gte: now },
-              },
-            },
+            user: { isActive: true }
           },
           include: {
             user: {
@@ -46,6 +39,32 @@ export const getCachedDepartments = unstable_cache(
   ["departments-list"],
   { tags: ["departments"], revalidate: 60 }
 );
+
+export async function getPatientAppointments(userId: string) {
+  const patient = await prisma.patientProfile.findUnique({
+    where: { userId },
+    select: { id: true }
+  });
+  const patientId = patient?.id;
+  if (!patientId) return [];
+
+  return await prisma.appointment.findMany({
+    where: {
+      patientId
+    },
+    include: {
+      doctor: {
+        include: {
+          user: { select: { name: true, image: true } }
+        }
+      },
+      department: { select: { name: true } },
+      hospital: { select: { name: true } },
+      queueToken: { select: { tokenNumber: true, position: true } }
+    },
+    orderBy: { scheduledAt: 'desc' }
+  });
+}
 
 // Cache patient ID to avoid redundant lookups
 const getPatientId = async (userId: string) => {
